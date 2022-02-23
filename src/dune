@@ -11,7 +11,8 @@
   LINT
   Config
   CollectedLints
-  LoadDune)
+  LoadDune
+  StatisticsCollector)
  (modules_without_implementation LINT)
  (libraries ppxlib sexplib yojson Tast_pattern)
  (preprocess

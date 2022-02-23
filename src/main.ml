@@ -5,19 +5,20 @@ open Utils
 
 let untyped_linters =
   let open UntypedLints in
-  [ (module GuardInsteadOfIf : LINT.UNTYPED)
+  [ (*(module GuardInsteadOfIf : LINT.UNTYPED)
   ; (module Dollar : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
-  ; (module VarShouldNotBeUsed : LINT.UNTYPED)
+  ; (module VarShouldNotBeUsed : LINT.UNTYPED)  
+  ;*) (module IfThenElseCount: LINT.UNTYPED)
   ]
 ;;
 
 let typed_linters =
   let open TypedLints in
   [ (* * *********************** *)
-    (module Failwith : LINT.TYPED)
+    (*(module Failwith : LINT.TYPED)
   ; (module Hashtables : LINT.TYPED)
   ; (module ListLength : LINT.TYPED)
   ; (module ProposeFunction : LINT.TYPED)
@@ -28,7 +29,7 @@ let typed_linters =
   ; (module IfBool : LINT.TYPED)
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
-  ; (module MonadLaws : LINT.TYPED)
+  ; (module MonadLaws : LINT.TYPED) *)
     (* * *********************** *)
   ]
 ;;
@@ -173,13 +174,14 @@ let () =
     | File file ->
       process_untyped file;
       CollectedLints.report ()
-    | Dir path ->
+    | Dir path -> 
       LoadDune.analyze_dir
         ~untyped:process_untyped
         ~cmt:process_cmt_typedtree
         ~cmti:process_cmti_typedtree
-        path;
-      CollectedLints.report ()
+        path; 
+      (*CollectedLints.report (); *)
+      StatisticsCollector.report ();
   in
   ()
 ;;

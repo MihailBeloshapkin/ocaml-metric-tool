@@ -7,4 +7,5 @@
   ParsetreeHasDocs
   ToplevelEval
   Dollar
-  VarShouldNotBeUsed))
+  VarShouldNotBeUsed
+  IfThenElseCount))

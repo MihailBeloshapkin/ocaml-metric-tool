@@ -52,7 +52,7 @@ open Ast_iterator
 
 type input = Ast_iterator.iterator
 
-let msg = "Prefer guard instead of if-then-else in case construction"
+let msg = "Prefer guard instead of if-then-else in case construction!!"
 
 let report ~filename ~loc =
   let module M = struct
@@ -84,6 +84,6 @@ let run _ fallback =
           self.expr self cond;
           self.expr self th;
           Option.iter ~f:(self.expr self) el
-        | _ -> fallback.case self case)
+        | _ -> fallback.case self case) 
   }
 ;;
