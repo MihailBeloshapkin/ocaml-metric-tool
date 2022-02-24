@@ -11,7 +11,7 @@ let untyped_linters =
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)  
-  ;*) (module IfThenElseCount: LINT.UNTYPED)
+  ;*) (module GetStatistics: LINT.UNTYPED)
   ]
 ;;
 
