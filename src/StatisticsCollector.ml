@@ -13,10 +13,8 @@ type statistics = {
   };;
 
 let countOfIfThen = ref 0
-
 let countOfMatch = ref 0
-
-let countOfLet = ref 0 
+let countOfLet = ref 0
 
 let add = function
   | LetExp -> countOfLet := !countOfLet + 1
