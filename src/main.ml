@@ -5,19 +5,20 @@ open Utils
 
 let untyped_linters =
   let open UntypedLints in
-  [ (module GuardInsteadOfIf : LINT.UNTYPED)
+  [ (*(module GuardInsteadOfIf : LINT.UNTYPED)
   ; (module Dollar : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)
+  ;*) (module GetStatistics : LINT.UNTYPED)
   ]
 ;;
 
 let typed_linters =
   let open TypedLints in
   [ (* * *********************** *)
-    (module Failwith : LINT.TYPED)
+  (*  (module Failwith : LINT.TYPED)
   ; (module Hashtables : LINT.TYPED)
   ; (module ListLength : LINT.TYPED)
   ; (module ProposeFunction : LINT.TYPED)
@@ -28,7 +29,7 @@ let typed_linters =
   ; (module IfBool : LINT.TYPED)
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
-  ; (module MonadLaws : LINT.TYPED)
+  ; (module MonadLaws : LINT.TYPED) *)
     (* * *********************** *)
   ]
 ;;
@@ -179,7 +180,8 @@ let () =
         ~cmt:process_cmt_typedtree
         ~cmti:process_cmti_typedtree
         path;
-      CollectedLints.report ()
+      (*CollectedLints.report ()*)
+      StatisticsCollector.report ()
   in
   ()
 ;;
