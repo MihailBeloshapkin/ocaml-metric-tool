@@ -11,7 +11,10 @@ let untyped_linters =
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)
-  ;*) (module GetStatistics : LINT.UNTYPED)
+  ;*)
+(*  (module CCComplexity : LINT.UNTYPED); 
+  (module GetStatistics : LINT.UNTYPED); *) 
+  (module Holsted : LINT.UNTYPED)
   ]
 ;;
 
@@ -173,7 +176,8 @@ let () =
       Caml.exit 0
     | File file ->
       process_untyped file;
-      CollectedLints.report ()
+      (*CollectedLints.report () *)
+      StatisticsCollector.report ()
     | Dir path ->
       LoadDune.analyze_dir
         ~untyped:process_untyped

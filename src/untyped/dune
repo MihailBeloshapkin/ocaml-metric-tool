@@ -8,4 +8,6 @@
   ToplevelEval
   Dollar
   VarShouldNotBeUsed
-  GetStatistics))
+  GetStatistics
+  Holsted
+  CCComplexity))
