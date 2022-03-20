@@ -1,0 +1,10 @@
+(library
+ (name Metrics)
+ (libraries zanuda_core)
+ (modules
+  GetStatistics
+  Holsted
+  CCComplexity
+  Tester
+  Lexer
+  LOC))

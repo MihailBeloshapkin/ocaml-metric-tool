@@ -31,7 +31,8 @@
   Tast_pattern
   zanuda_core
   TypedLints
-  UntypedLints)
+  UntypedLints
+  Metrics)
  (preprocess
   (pps ppx_inline_test))
  (package mylinter))

@@ -24,6 +24,11 @@ type complexity = {
   mutable branching : int
 };;
 
+type loc = {
+  mutable p_loc : int;
+  mutable l_loc : int
+};;
+
 type holsted_data = {
   mutable operators : string list;
   mutable operands : string list;
@@ -43,9 +48,17 @@ let g_info = {
 let compl = { cc_complexity = 1; branching = 0 }
 let holsted = { operators = []; operands = []; u_operators = []; u_operands = [] }
 
+let loc = { p_loc = 0; l_loc = 0 }
+
 let increase_complexity br =
   compl.cc_complexity <- compl.cc_complexity + 1;
   compl.branching <- compl.branching + br 
+;; 
+
+
+let increase_loc () =
+  loc.p_loc <- loc.p_loc + 1;
+  loc.l_loc <- loc.l_loc + 1
 ;; 
 
 let add_operator op = 

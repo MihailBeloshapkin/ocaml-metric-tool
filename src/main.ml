@@ -5,6 +5,7 @@ open Utils
 
 let untyped_linters =
   let open UntypedLints in
+  let open Metrics in
   [ (*(module GuardInsteadOfIf : LINT.UNTYPED)
   ; (module Dollar : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
@@ -98,6 +99,32 @@ let process_cmti_typedtree filename typedtree =
     printfn "%a" Printtyped.interface typedtree); *)
   (* Format.printf "Typedtree MLI:\n%a\n%!" Printtyped.interface typedtree; *)
   with_info filename (fun info -> typed_on_signature info typedtree)
+;;
+
+let get_file filename =
+  let ic = open_in filename in
+  let try_read () = try Some (input_line ic) with End_of_file -> None in
+  let rec sub acc =
+    match try_read () with
+    | None -> 
+      close_in ic;
+      acc |> List.rev
+    | Some data -> sub (data::acc)
+  in
+  let data = sub [] in
+  String.concat ~sep:"\n" data
+;;
+
+let process_metrics info (parsetree : Parsetree.structure) filename =
+  let open Metrics in
+  let open Parsetree in
+  let data = get_file filename in
+  Caml.Format.printf "%s" data
+  (*let it = GetStatistics.run info Ast_iterator.default_iterator in
+  it.structure it parsetree *)
+ (* Tester.run info parsetree *)
+  (*let it = Holsted.run info Ast_iterator.default_iterator in
+  it.structure it parsetree*)
 ;;
 
 let process_untyped filename =
