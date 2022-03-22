@@ -101,25 +101,11 @@ let process_cmti_typedtree filename typedtree =
   with_info filename (fun info -> typed_on_signature info typedtree)
 ;;
 
-let get_file filename =
-  let ic = open_in filename in
-  let try_read () = try Some (input_line ic) with End_of_file -> None in
-  let rec sub acc =
-    match try_read () with
-    | None -> 
-      close_in ic;
-      acc |> List.rev
-    | Some data -> sub (data::acc)
-  in
-  let data = sub [] in
-  String.concat ~sep:"\n" data
-;;
-
-let process_metrics info (parsetree : Parsetree.structure) filename =
+let process_metrics (parsetree : Parsetree.structure) filename =
   let open Metrics in
   let open Parsetree in
-  let data = get_file filename in
-  Caml.Format.printf "%s" data
+  LOC.run filename
+
   (*let it = GetStatistics.run info Ast_iterator.default_iterator in
   it.structure it parsetree *)
  (* Tester.run info parsetree *)
@@ -142,7 +128,8 @@ let process_untyped filename =
   let () =
     let process_structure info =
       let parsetree = Compile_common.parse_impl info in
-      untyped_on_structure info parsetree;
+      (*untyped_on_structure info parsetree; *)
+      process_metrics parsetree filename;
       try
         (* let typedtree, _ = Compile_common.typecheck_impl info parsetree in
         typed_on_structure info typedtree;  *)

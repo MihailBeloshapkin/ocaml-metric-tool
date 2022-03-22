@@ -1,3 +1,5 @@
+open Caml
+open Base
 
 let get_file filename =
   let ic = open_in filename in
@@ -10,10 +12,13 @@ let get_file filename =
     | Some data -> sub (data::acc)
   in
   let data = sub [] in
-  String.concat "\n" data
+  String.concat ~sep:"\n" data
 ;;
 
 let run filename =
   let source = get_file filename in
-  Lexer.process source
+  let (emply, lines, chars, comments) = Lexer.process source in
+  List.iter ~f:(fun x -> (Caml.Format.printf "%s" x)) comments;
+  Caml.Format.printf "\nEmpty lines: %d\n" emply; 
+  () 
 ;; 
