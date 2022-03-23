@@ -93,9 +93,9 @@ let calc_holsted () =
 
 let report () = 
   Caml.Format.printf "LOC:\n";
-  Caml.Format.printf "Lines: %d\n" loc_metric.lines;
-  Caml.Format.printf "Logical lines: %d\n" loc_metric.lloc;
-  Caml.Format.printf "Comments: %d\n" loc_metric.comments;
+  Caml.Format.printf "  Lines: %d\n" loc_metric.lines;
+  Caml.Format.printf "  Logical lines: %d\n" loc_metric.lloc;
+  Caml.Format.printf "  Comments: %d\n" loc_metric.comments;
   Caml.Format.printf "Operators/operands count: %d/%d\n" (List.length holsted.operators) (List.length holsted.operands);
   Caml.Format.printf "Operators: ";
   List.iter ~f: (fun x -> Caml.Format.printf "%s " x) holsted.operators;
