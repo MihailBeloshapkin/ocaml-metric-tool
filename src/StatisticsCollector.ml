@@ -11,29 +11,30 @@ type variants =
   | IdentExp
 
 type general_info = {
-  mutable count_if_then : int;
-  mutable count_of_match : int;
+  mutable count_if_then     : int;
+  mutable count_of_match    : int;
   mutable count_of_function : int;
-  mutable count_of_let : int;
-  mutable count_of_fun : int;
-  mutable count_of_ident : int
+  mutable count_of_let      : int;
+  mutable count_of_fun      : int;
+  mutable count_of_ident    : int
 };;
 
 type complexity = {
   mutable cc_complexity : int;
-  mutable branching : int
+  mutable branching     : int
 };;
 
 type loc = {
-  mutable p_loc : int;
-  mutable l_loc : int
+  mutable lines     : int;
+  mutable lloc      : int;
+  mutable comments  : int
 };;
 
 type holsted_data = {
-  mutable operators : string list;
-  mutable operands : string list;
+  mutable operators   : string list;
+  mutable operands    : string list;
   mutable u_operators : string list;
-  mutable u_operands : string list
+  mutable u_operands  : string list
 };;
 
 let g_info = { 
@@ -48,17 +49,11 @@ let g_info = {
 let compl = { cc_complexity = 1; branching = 0 }
 let holsted = { operators = []; operands = []; u_operators = []; u_operands = [] }
 
-let loc = { p_loc = 0; l_loc = 0 }
+let loc_metric = { lines = 0; lloc = 0 ; comments = 0}
 
 let increase_complexity br =
   compl.cc_complexity <- compl.cc_complexity + 1;
   compl.branching <- compl.branching + br 
-;; 
-
-
-let increase_loc () =
-  loc.p_loc <- loc.p_loc + 1;
-  loc.l_loc <- loc.l_loc + 1
 ;; 
 
 let add_operator op = 
@@ -83,6 +78,13 @@ let add = function
   (*| _ -> raise SomethingWrong *)
 ;;
 
+
+let set_loc ~lines ~lloc ~comments = 
+  loc_metric.lines <- lines;
+  loc_metric.lloc <- lloc;
+  loc_metric.comments <- comments
+;;
+
 let calc_holsted () =
   let n1 = holsted.u_operators |> List.length |> float in
   let n2 = holsted.u_operands |> List.length |> float in
@@ -90,6 +92,10 @@ let calc_holsted () =
 ;;
 
 let report () = 
+  Caml.Format.printf "LOC:\n";
+  Caml.Format.printf "Lines: %d\n" loc_metric.lines;
+  Caml.Format.printf "Logical lines: %d\n" loc_metric.lloc;
+  Caml.Format.printf "Comments: %d\n" loc_metric.comments;
   Caml.Format.printf "Operators/operands count: %d/%d\n" (List.length holsted.operators) (List.length holsted.operands);
   Caml.Format.printf "Operators: ";
   List.iter ~f: (fun x -> Caml.Format.printf "%s " x) holsted.operators;

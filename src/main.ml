@@ -104,7 +104,7 @@ let process_cmti_typedtree filename typedtree =
 let process_metrics (parsetree : Parsetree.structure) filename =
   let open Metrics in
   let open Parsetree in
-  LOC.run filename
+  LOC.run filename;
 
   (*let it = GetStatistics.run info Ast_iterator.default_iterator in
   it.structure it parsetree *)
