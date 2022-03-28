@@ -22,14 +22,7 @@ open Ast_iterator
 
 type input = Ast_iterator.iterator
 
-(*
-let get_info = function 
-  | Ppat_var { txt; _ }-> Caml.Format.printf "Variable : %s\n" txt
-  | _ ->  Caml.Format.print_string "\n"
-;;
-*)
-
-let run _ fallback =
+let run fallback =
   { fallback with
     expr =
       (fun self currentExpr ->
@@ -72,8 +65,14 @@ let run _ fallback =
           Caml.Format.print_string "\nFun\n"; 
           StatisticsCollector.add FunExp;
           fallback.expr self currentExpr 
-        | _ -> 
-          Caml.Format.printf "Other\n"; 
+        | Pexp_tuple li -> 
+          Caml.Format.print_string "\nTuple\n"; 
+        | Pexp_array li -> 
+          Caml.Format.print_string "\nArray\n"; 
+        | Pexp_sequence (_, _) -> 
+          Caml.Format.print_string "\nSequence\n";
+        | _ ->
+          Caml.Format.printf "\nOther\n"; 
           fallback.expr self currentExpr)
   }
 ;;

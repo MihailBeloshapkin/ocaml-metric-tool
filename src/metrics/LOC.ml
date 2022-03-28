@@ -2,7 +2,7 @@ open Caml
 open Base
 open Zanuda_core
 
-(* Load source code from the file. *)
+(** Load source code from the file. *)
 let get_file filename =
   let ic = open_in filename in
   let try_read () = try Some (input_line ic) with End_of_file -> None in
@@ -17,9 +17,9 @@ let get_file filename =
   String.concat ~sep:"\n" data
 ;;
 
-(* Process LOC metric *)
+(** Run LOC metric *)
 let run filename =
   let source = get_file filename in
-  let (emply, lines, comm_lines, _, llines) = Lexer.process source in
+  let (_, lines, comm_lines, llines) = Lexer.process source in
   StatisticsCollector.set_loc ~lines ~lloc:llines ~comments:comm_lines
 ;;

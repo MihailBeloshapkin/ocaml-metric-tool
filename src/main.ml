@@ -14,8 +14,7 @@ let untyped_linters =
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)
   ;*)
 (*  (module CCComplexity : LINT.UNTYPED); 
-  (module GetStatistics : LINT.UNTYPED); *) 
-  (module Holsted : LINT.UNTYPED)
+  (module GetStatistics : LINT.UNTYPED); *)
   ]
 ;;
 
@@ -105,12 +104,10 @@ let process_metrics (parsetree : Parsetree.structure) filename =
   let open Metrics in
   let open Parsetree in
   LOC.run filename;
-
-  (*let it = GetStatistics.run info Ast_iterator.default_iterator in
-  it.structure it parsetree *)
- (* Tester.run info parsetree *)
-  (*let it = Holsted.run info Ast_iterator.default_iterator in
-  it.structure it parsetree*)
+  (*let it = GetStatistics.run Ast_iterator.default_iterator in
+  it.structure it parsetree*) 
+  (*Tester.run None parsetree*)
+  Holsted.run parsetree
 ;;
 
 let process_untyped filename =

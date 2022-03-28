@@ -3,8 +3,8 @@
  (libraries zanuda_core)
  (modules
   GetStatistics
-  Holsted
   CCComplexity
   Tester
   Lexer
+  Holsted
   LOC))

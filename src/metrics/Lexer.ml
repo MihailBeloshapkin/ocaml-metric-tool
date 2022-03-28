@@ -5,9 +5,8 @@
   let num_empty = ref 0
   let num_comm_lines = ref 0
   let num_llines = ref 0
-  let commets_data : string list ref = ref []
 
-# 11 "Lexer.ml"
+# 10 "Lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base =
    "\000\000\250\255\251\255\252\255\002\000\002\000\255\255\254\255\
@@ -110,126 +109,126 @@ let __ocaml_lex_tables = {
    "";
 }
 
-let rec scan is_new_line lexbuf =
-   __ocaml_lex_scan_rec is_new_line lexbuf 0
-and __ocaml_lex_scan_rec is_new_line lexbuf __ocaml_lex_state =
+let rec scan is_non_logic lexbuf =
+   __ocaml_lex_scan_rec is_non_logic lexbuf 0
+and __ocaml_lex_scan_rec is_non_logic lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 13 "Lexer.mll"
-                 ( incr num_comm_lines; comments 0 "" is_new_line lexbuf )
-# 121 "Lexer.ml"
+# 12 "Lexer.mll"
+                 ( incr num_comm_lines; comments 0  is_non_logic lexbuf )
+# 120 "Lexer.ml"
 
   | 1 ->
-# 14 "Lexer.mll"
+# 13 "Lexer.mll"
                  ( num_lines := !num_lines + 2;
-                   if not is_new_line then incr num_llines;
+                   if not is_non_logic then incr num_llines;
                    incr num_empty;
                    empty 0 lexbuf )
-# 129 "Lexer.ml"
+# 128 "Lexer.ml"
 
   | 2 ->
-# 18 "Lexer.mll"
+# 17 "Lexer.mll"
                  ( incr num_lines; 
-                   if not is_new_line then incr num_llines;
+                   if not is_non_logic then incr num_llines;
                    scan true lexbuf )
-# 136 "Lexer.ml"
+# 135 "Lexer.ml"
 
   | 3 ->
-# 21 "Lexer.mll"
-                 ( incr num_chars; scan is_new_line lexbuf )
-# 141 "Lexer.ml"
+# 20 "Lexer.mll"
+                 ( incr num_chars; scan is_non_logic lexbuf )
+# 140 "Lexer.ml"
 
   | 4 ->
-# 22 "Lexer.mll"
+# 21 "Lexer.mll"
                  ( incr num_chars; scan false lexbuf )
-# 146 "Lexer.ml"
+# 145 "Lexer.ml"
 
   | 5 ->
-# 23 "Lexer.mll"
+# 22 "Lexer.mll"
                  ( () )
-# 151 "Lexer.ml"
+# 150 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
-      __ocaml_lex_scan_rec is_new_line lexbuf __ocaml_lex_state
+      __ocaml_lex_scan_rec is_non_logic lexbuf __ocaml_lex_state
 
-and comments level acc is_nline lexbuf =
-   __ocaml_lex_comments_rec level acc is_nline lexbuf 9
-and __ocaml_lex_comments_rec level acc is_nline lexbuf __ocaml_lex_state =
+and comments level is_nline lexbuf =
+   __ocaml_lex_comments_rec level is_nline lexbuf 9
+and __ocaml_lex_comments_rec level is_nline lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 25 "Lexer.mll"
-                ( comments (level + 1) (String.concat "" [acc; "(*"]) is_nline lexbuf )
-# 163 "Lexer.ml"
+# 24 "Lexer.mll"
+                 ( comments (level + 1) is_nline lexbuf )
+# 162 "Lexer.ml"
 
   | 1 ->
-# 26 "Lexer.mll"
-                ( if level = 0 then (commets_data := acc::(!commets_data); scan is_nline lexbuf)
-                  else
-                    comments (level - 1) (String.concat "" [acc; "*)"]) is_nline lexbuf )
-# 170 "Lexer.ml"
+# 25 "Lexer.mll"
+                 ( if level = 0 then (scan is_nline lexbuf)
+                   else
+                     comments (level - 1) is_nline lexbuf )
+# 169 "Lexer.ml"
 
   | 2 ->
-# 29 "Lexer.mll"
-                ( incr num_lines; incr num_comm_lines; comments level (String.concat "" [acc; "\n"]) true lexbuf )
-# 175 "Lexer.ml"
+# 28 "Lexer.mll"
+                 ( incr num_lines; incr num_comm_lines; comments level  true lexbuf )
+# 174 "Lexer.ml"
 
   | 3 ->
 let
-# 30 "Lexer.mll"
+# 29 "Lexer.mll"
          c
-# 181 "Lexer.ml"
+# 180 "Lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 30 "Lexer.mll"
-                ( comments level (String.concat "" [acc; String.make 1 c]) is_nline lexbuf )
-# 185 "Lexer.ml"
+# 29 "Lexer.mll"
+                 ( comments level is_nline lexbuf )
+# 184 "Lexer.ml"
 
   | 4 ->
-# 31 "Lexer.mll"
-                ( () )
-# 190 "Lexer.ml"
+# 30 "Lexer.mll"
+                 ( () )
+# 189 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
-      __ocaml_lex_comments_rec level acc is_nline lexbuf __ocaml_lex_state
+      __ocaml_lex_comments_rec level is_nline lexbuf __ocaml_lex_state
 
 and empty acc lexbuf =
    __ocaml_lex_empty_rec acc lexbuf 17
 and __ocaml_lex_empty_rec acc lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 33 "Lexer.mll"
+# 32 "Lexer.mll"
                                         ( empty acc lexbuf )
-# 202 "Lexer.ml"
+# 201 "Lexer.ml"
 
   | 1 ->
-# 34 "Lexer.mll"
+# 33 "Lexer.mll"
                                         ( incr num_lines; empty (acc + 1) lexbuf )
-# 207 "Lexer.ml"
+# 206 "Lexer.ml"
 
   | 2 ->
-# 35 "Lexer.mll"
-                                        ( incr num_comm_lines; (num_empty := !num_empty + acc); comments 0 "" true lexbuf )
-# 212 "Lexer.ml"
+# 34 "Lexer.mll"
+                                        ( incr num_comm_lines; (num_empty := !num_empty + acc); comments 0 true lexbuf )
+# 211 "Lexer.ml"
 
   | 3 ->
-# 36 "Lexer.mll"
+# 35 "Lexer.mll"
                                         ( (num_empty := !num_empty + acc); scan false lexbuf )
-# 217 "Lexer.ml"
+# 216 "Lexer.ml"
 
   | 4 ->
-# 37 "Lexer.mll"
+# 36 "Lexer.mll"
                                         ( () )
-# 222 "Lexer.ml"
+# 221 "Lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_empty_rec acc lexbuf __ocaml_lex_state
 
 ;;
 
-# 39 "Lexer.mll"
+# 38 "Lexer.mll"
  
   let process source =
     let lexbuf = Lexing.from_string source in
     scan true lexbuf;
-    (!num_empty, !num_lines, !num_comm_lines, !commets_data, !num_llines)
+    (!num_empty, !num_lines, !num_comm_lines, !num_llines)
 
-# 236 "Lexer.ml"
+# 235 "Lexer.ml"

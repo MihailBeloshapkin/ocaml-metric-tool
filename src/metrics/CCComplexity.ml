@@ -22,8 +22,7 @@ open Ast_iterator
 
 type input = Ast_iterator.iterator
 
-
-let run _ fallback =
+let run fallback =
   { fallback with
     expr =
       (fun self currentExpr ->
