@@ -38,10 +38,9 @@ let run fallback =
           self.expr self ex;
           List.iter ~f: (fun bind -> self.expr self bind.pvb_expr) vb;
           StatisticsCollector.add LetExp
-        | Pexp_ifthenelse (cond, th, _) ->
+        | Pexp_ifthenelse (_, _, _) ->
           Caml.Format.printf "IfThenElse\n";  
-          self.expr self cond;                        
-          self.expr self th;
+          fallback.expr self currentExpr;
           StatisticsCollector.add IfThenElseExp;
         | Pexp_match (ex, li) -> 
           Caml.Format.printf "Match";
@@ -71,6 +70,7 @@ let run fallback =
           Caml.Format.print_string "\nArray\n"; 
         | Pexp_sequence (_, _) -> 
           Caml.Format.print_string "\nSequence\n";
+          fallback.expr self currentExpr;
         | _ ->
           Caml.Format.printf "\nOther\n"; 
           fallback.expr self currentExpr)

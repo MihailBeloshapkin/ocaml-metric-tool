@@ -121,7 +121,7 @@ let report_holsted () =
 let report () =
   report_loc ();
   report_holsted ();
-  Caml.Format.printf "Complexity: %d\n" compl.cc_complexity;
+  (*Caml.Format.printf "Complexity: %d\n" compl.cc_complexity;
   Caml.Format.printf "Branching: %d\n" compl.branching;
   Caml.Format.printf "Count Of if-then: %d\n" g_info.count_if_then;
   Caml.Format.printf "Count Of match: %d\n" g_info.count_of_match;
@@ -129,4 +129,5 @@ let report () =
   Caml.Format.printf "Count Of functions: %d\n" g_info.count_of_fun;
   Caml.Format.printf "Count of identifiers: %d\n" g_info.count_of_ident;
   Caml.Format.printf "Count Of function | -> ... | -> ... expression: %d\n" g_info.count_of_function;
+*)
 ;;
