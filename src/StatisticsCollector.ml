@@ -2,23 +2,6 @@ open Base
 open Caml.Format
 open Utils
 
-type variants =
-  | LetExp
-  | IfThenElseExp
-  | MatchExp
-  | FunExp
-  | FunctionExp
-  | IdentExp
-
-type general_info = {
-  mutable count_if_then     : int;
-  mutable count_of_match    : int;
-  mutable count_of_function : int;
-  mutable count_of_let      : int;
-  mutable count_of_fun      : int;
-  mutable count_of_ident    : int
-};;
-
 type complexity = {
   mutable complexity          : int;
   mutable complexity_with_cfg : int
@@ -38,15 +21,6 @@ type holsted_data = {
   mutable volume             : float;
   mutable theoretical_volume : float
 };;
-
-let g_info = { 
-  count_if_then = 0; 
-  count_of_match = 0; 
-  count_of_function = 0; 
-  count_of_let = 0; 
-  count_of_fun = 0; 
-  count_of_ident = 0
-}
 
 (* Contains info about cyclomatic complexity *)
 let cc_data = ref []
@@ -87,16 +61,6 @@ let increase_complexity ~lcomplexity ~lcomplexity_cfg =
 ;; 
 
 exception SomethingWrong
-
-let add = function
-  | LetExp -> g_info.count_of_let <- g_info.count_of_let + 1
-  | IfThenElseExp -> g_info.count_if_then <- g_info.count_if_then + 1
-  | MatchExp -> g_info.count_of_match <- g_info.count_of_match + 1
-  | FunExp -> g_info.count_of_fun <- g_info.count_of_fun + 1
-  | FunctionExp -> g_info.count_of_function <- g_info.count_of_function + 1
-  | IdentExp -> g_info.count_of_ident <- g_info.count_of_ident + 1  
-  (*| _ -> raise SomethingWrong *)
-;;
 
 let set_loc ~lines ~lloc ~comments = 
   loc_metric.lines <- lines;
@@ -147,13 +111,4 @@ let report = function
   | "halstead" -> report_holsted ();
   | "cc"       -> report_cc ();
   | _          -> ();
-  (*Caml.Format.printf "Complexity: %d\n" compl.cc_complexity;
-  Caml.Format.printf "Branching: %d\n" compl.branching;
-  Caml.Format.printf "Count Of if-then: %d\n" g_info.count_if_then;
-  Caml.Format.printf "Count Of match: %d\n" g_info.count_of_match;
-  Caml.Format.printf "Count Of let: %d\n" g_info.count_of_let;
-  Caml.Format.printf "Count Of functions: %d\n" g_info.count_of_fun;
-  Caml.Format.printf "Count of identifiers: %d\n" g_info.count_of_ident;
-  Caml.Format.printf "Count Of function | -> ... | -> ... expression: %d\n" g_info.count_of_function;
-*)
 ;;

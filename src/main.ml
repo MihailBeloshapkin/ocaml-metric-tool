@@ -206,7 +206,7 @@ let usage_msg = "..."
 let source = ref ""
 let metric = ref ""
 let anon_fun filename = source := filename
-let data = [("-m", Arg.Set_string metric, "Set file name with source code")]
+let data = [("-m", Arg.Set_string metric, "Set metric")]
 
 let () =
   Arg.parse data anon_fun usage_msg;
