@@ -11,23 +11,27 @@ type vertex = {
 };;
 
 exception SomethingIsWrong
+exception Found
+
 
 let contains_branching exp =
-  let is_branching_exp  = ref false in
   let find_branches fallback =
     {
       fallback with
       expr =
         (fun self expr ->
           match expr.pexp_desc with
-          | Pexp_ifthenelse _  | Pexp_match (_, _) | Pexp_function _ -> is_branching_exp := true;
+          | Pexp_ifthenelse _  | Pexp_match (_, _) | Pexp_function _ -> raise Found
           | _ -> fallback.expr self expr;
         )
     }
   in
-  let iter = find_branches Ast_iterator.default_iterator in
-  iter.expr iter exp;
-  !is_branching_exp
+  try 
+    let iter = find_branches Ast_iterator.default_iterator in
+    iter.expr iter exp;
+    false
+  with
+  | Found -> true
 ;;
 
 let generate_id id_set = 
