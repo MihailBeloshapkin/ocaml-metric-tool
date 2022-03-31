@@ -2,10 +2,9 @@
  (name Metrics)
  (libraries zanuda_core)
  (modules
-  GetStatistics
   CCComplexity
-  Tester
   Lexer
   Holsted
   LOC
-  CFG))
+  CFG
+ ))

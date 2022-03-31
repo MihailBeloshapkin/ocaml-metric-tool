@@ -102,6 +102,7 @@ let run parsetree =
    expr = 
      (fun _ ex ->
        match ex.pexp_desc with
+       | Pexp_function (_)
        | Pexp_fun (_, _, _, _) ->
          let acc : program_content ref = ref { operators = []; operands = [] } in       
          

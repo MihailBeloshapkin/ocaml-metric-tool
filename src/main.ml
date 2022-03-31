@@ -100,15 +100,49 @@ let process_cmti_typedtree filename typedtree =
   with_info filename (fun info -> typed_on_signature info typedtree)
 ;;
 
-let process_metrics (parsetree : Parsetree.structure) filename =
+let process_metrics ~info ~parsetree ~filename ~metric =
   let open Metrics in
   let open Parsetree in
-  (*LOC.run filename;*)
-  (*let it = GetStatistics.run Ast_iterator.default_iterator in
-  it.structure it parsetree*) 
-  (*Tester.run None parsetree*)
-  CFG.run parsetree
-  (*Holsted.run parsetree*)
+  match metric with
+  | "loc"      -> LOC.run filename;
+  | "halstead" -> Holsted.run parsetree;
+  | "cc"       -> CCComplexity.run parsetree;
+  | _          -> ();
+;;
+
+let process metric filename =
+  Clflags.error_style := Some Misc.Error_style.Contextual;
+  Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
+  let with_info f =
+    Compile_common.with_info
+      ~native:false
+      ~source_file:filename
+      ~tool_name:"asdf"
+      ~output_prefix:"asdf"
+      ~dump_ext:"asdf"
+      f
+  in
+  let () =
+    let process_structure info =
+      let parsetree = Compile_common.parse_impl info in
+      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
+      (*untyped_on_structure info parsetree; *)
+      process_metrics ~info ~parsetree ~filename ~metric;
+    in
+    with_info (fun info ->
+        if String.is_suffix info.source_file ~suffix:".ml"
+        then process_structure info
+        else (
+          let () =
+            Caml.Format.eprintf
+              "Don't know to do with file '%s'\n%s %d\n%!"
+              info.source_file
+              Caml.__FILE__
+              Caml.__LINE__
+          in
+          Caml.exit 1))
+  in
+  ()
 ;;
 
 let process_untyped filename =
@@ -126,8 +160,9 @@ let process_untyped filename =
   let () =
     let process_structure info =
       let parsetree = Compile_common.parse_impl info in
+      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
       (*untyped_on_structure info parsetree; *)
-      process_metrics parsetree filename;
+   (*   process_metrics parsetree None filename;  *)
       try
         (* let typedtree, _ = Compile_common.typecheck_impl info parsetree in
         typed_on_structure info typedtree;  *)
@@ -167,37 +202,15 @@ let process_untyped filename =
   ()
 ;;
 
+let usage_msg = "..."
+let source = ref ""
+let metric = ref ""
+let anon_fun filename = source := filename
+let data = [("-m", Arg.Set_string metric, "Set file name with source code")]
+
 let () =
-  Config.parse_args ();
-  let () =
-    match Config.mode () with
-    | Config.Unspecified -> ()
-    | Dump filename ->
-      let info =
-        List.concat
-          [ List.map untyped_linters ~f:(fun (module L : LINT.UNTYPED) ->
-                L.describe_itself ())
-          ; List.map typed_linters ~f:(fun (module L : LINT.TYPED) ->
-                L.describe_itself ())
-          ]
-      in
-      let ch = Caml.open_out filename in
-      Exn.protect
-        ~f:(fun () -> Yojson.Safe.pretty_to_channel ~std:true ch (`List info))
-        ~finally:(fun () -> Caml.close_out ch);
-      Caml.exit 0
-    | File file ->
-      process_untyped file;
-      (*CollectedLints.report () *)
-      StatisticsCollector.report ()
-    | Dir path ->
-      LoadDune.analyze_dir
-        ~untyped:process_untyped
-        ~cmt:process_cmt_typedtree
-        ~cmti:process_cmti_typedtree
-        path;
-      (*CollectedLints.report ()*)
-      StatisticsCollector.report ()
-  in
+  Arg.parse data anon_fun usage_msg;
+  process !metric !source;
+  StatisticsCollector.report !metric;
   ()
 ;;
