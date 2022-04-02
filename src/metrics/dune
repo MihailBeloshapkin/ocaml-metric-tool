@@ -1,6 +1,6 @@
 (library
  (name Metrics)
- (libraries zanuda_core)
+ (libraries zanuda_core ocamlgraph)
  (modules
   CCComplexity
   Lexer

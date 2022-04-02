@@ -34,8 +34,8 @@ let run parsetree =
          let local_it = process_function Ast_iterator.default_iterator in
          local_it.expr local_it ex;
 
-         let vertexes, edges = CFG.build_cfg ex in
-         let complexity_with_cfg =(List.length edges) - (List.length vertexes) + 2 in
+         let edges, vertexes = CFG.build_cfg ex in
+         let complexity_with_cfg = edges - vertexes + 2 in
          StatisticsCollector.increase_complexity ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg;
          ()
        | _ -> ();
