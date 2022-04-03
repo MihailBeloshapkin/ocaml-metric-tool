@@ -75,7 +75,6 @@ let end_branching g start_node =
 (* Build Control Flow Graph from OCaml Parsetree expression*)
 let build_cfg (expr_func : Parsetree.expression) =
   let id_set = ref IdSet.empty in
-  id_set := IdSet.add 0 !id_set;
   
   let open G in
   let g = create () in
