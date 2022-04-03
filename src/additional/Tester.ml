@@ -22,7 +22,6 @@ open Ast_iterator
 
 type input = Ast_iterator.iterator
 
-
 let process_function e =
   let it = 
     { Ast_iterator.default_iterator with

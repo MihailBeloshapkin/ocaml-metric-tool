@@ -6,22 +6,20 @@ open Utils
 let untyped_linters =
   let open UntypedLints in
   let open Metrics in
-  [ (*(module GuardInsteadOfIf : LINT.UNTYPED)
+  [ (module GuardInsteadOfIf : LINT.UNTYPED)
   ; (module Dollar : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)
-  ;*)
-(*  (module CCComplexity : LINT.UNTYPED); 
-  (module GetStatistics : LINT.UNTYPED); *)
+  ;
   ]
 ;;
 
 let typed_linters =
   let open TypedLints in
   [ (* * *********************** *)
-  (*  (module Failwith : LINT.TYPED)
+    (module Failwith : LINT.TYPED)
   ; (module Hashtables : LINT.TYPED)
   ; (module ListLength : LINT.TYPED)
   ; (module ProposeFunction : LINT.TYPED)
@@ -32,7 +30,7 @@ let typed_linters =
   ; (module IfBool : LINT.TYPED)
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
-  ; (module MonadLaws : LINT.TYPED) *)
+  ; (module MonadLaws : LINT.TYPED) 
     (* * *********************** *)
   ]
 ;;
@@ -100,7 +98,7 @@ let process_cmti_typedtree filename typedtree =
   with_info filename (fun info -> typed_on_signature info typedtree)
 ;;
 
-let process_metrics ~info ~parsetree ~filename ~metric =
+let process_metrics ~parsetree ~filename ~metric =
   let open Metrics in
   let open Parsetree in
   match metric with
@@ -127,7 +125,7 @@ let process metric filename =
       let parsetree = Compile_common.parse_impl info in
       (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
       (*untyped_on_structure info parsetree; *)
-      process_metrics ~info ~parsetree ~filename ~metric;
+      process_metrics ~parsetree ~filename ~metric;
     in
     with_info (fun info ->
         if String.is_suffix info.source_file ~suffix:".ml"
@@ -162,7 +160,6 @@ let process_untyped filename =
       let parsetree = Compile_common.parse_impl info in
       (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
       (*untyped_on_structure info parsetree; *)
-   (*   process_metrics parsetree None filename;  *)
       try
         (* let typedtree, _ = Compile_common.typecheck_impl info parsetree in
         typed_on_structure info typedtree;  *)

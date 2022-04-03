@@ -76,3 +76,16 @@ let run fallback =
           Caml.Format.printf "\nOther\n"; 
           fallback.expr self currentExpr)
   }
+
+let run0 fallback =
+  {
+    fallback with
+    pat =
+      (fun self pat ->
+        Pprintast.pattern Format.std_formatter pat;
+        match pat.ppat_desc with
+        | Ppat_var _ -> printf "\nVAR\n";
+        | _ -> ();
+      )
+  }
+;;

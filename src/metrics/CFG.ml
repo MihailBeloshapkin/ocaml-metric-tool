@@ -14,6 +14,12 @@ type info = {
 exception SomethingIsWrong
 exception Found
 
+module IdSet =
+  Caml.Set.Make (struct 
+                   type t = int
+                   let compare = compare
+                 end);;
+
 module Node = struct
   type t = info
 end
@@ -44,10 +50,15 @@ let contains_branching exp =
   | Found -> true
 ;;
 
-let generate_id id_set = 
-  let new_id = (List.length !id_set) in
-  id_set := new_id::!id_set;
+let generate_id id_set =
+  match IdSet.max_elt_opt !id_set with
+  | Some elt ->
+  let new_id = elt + 1 in
+  id_set := IdSet.add new_id !id_set;
   new_id
+  | None -> 
+  id_set := IdSet.add 0 !id_set;
+  0
 ;;
 
 let end_branching g start_node =
@@ -61,9 +72,10 @@ let end_branching g start_node =
   sub start_node
 ;;
 
-(* Build Control Flow Graphh from OCaml Parsetree expression*)
+(* Build Control Flow Graph from OCaml Parsetree expression*)
 let build_cfg (expr_func : Parsetree.expression) =
-  let id_set : int list ref = ref [0] in
+  let id_set = ref IdSet.empty in
+  id_set := IdSet.add 0 !id_set;
   
   let open G in
   let g = create () in
