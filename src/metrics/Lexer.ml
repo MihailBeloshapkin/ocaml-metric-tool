@@ -227,8 +227,14 @@ and __ocaml_lex_empty_rec acc lexbuf __ocaml_lex_state =
 # 38 "Lexer.mll"
  
   let process source =
+    num_lines := 1;
+    num_chars := 0;
+    num_empty := 0;
+    num_comm_lines := 0;
+    num_llines := 0;
     let lexbuf = Lexing.from_string source in
     scan true lexbuf;
+
     (!num_empty, !num_lines, !num_comm_lines, !num_llines)
 
-# 235 "Lexer.ml"
+# 241 "Lexer.ml"

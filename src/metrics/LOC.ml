@@ -18,8 +18,9 @@ let get_file filename =
 ;;
 
 (** Run LOC metric *)
-let run filename =
+let run filename info =
+  let open StatisticsCollector in
   let source = get_file filename in
   let (_, lines, comm_lines, llines) = Lexer.process source in
-  StatisticsCollector.set_loc ~lines ~lloc:llines ~comments:comm_lines
+  StatisticsCollector.set_loc ~lines ~lloc:llines ~comments:comm_lines ~info
 ;;

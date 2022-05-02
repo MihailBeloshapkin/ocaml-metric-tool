@@ -37,7 +37,13 @@ and empty acc = parse
 
 {
   let process source =
+    num_lines := 1;
+    num_chars := 0;
+    num_empty := 0;
+    num_comm_lines := 0;
+    num_llines := 0;
     let lexbuf = Lexing.from_string source in
     scan true lexbuf;
+
     (!num_empty, !num_lines, !num_comm_lines, !num_llines)
 }

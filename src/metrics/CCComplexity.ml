@@ -5,7 +5,7 @@ open Utils
 open Parsetree
 open Ast_iterator
 
-let run parsetree =
+let run parsetree info =
   let it = {
   Ast_iterator.default_iterator with
    expr = 
@@ -33,11 +33,15 @@ let run parsetree =
          in
          let local_it = process_function Ast_iterator.default_iterator in
          local_it.expr local_it ex;
-
-         let edges, vertexes = CFG.build_cfg ex in
-         let complexity_with_cfg = edges - vertexes + 2 in
-         StatisticsCollector.increase_complexity ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg;
-         ()
+         let process () =
+           try
+             let edges, vertexes = CFG.build_cfg ex in
+             let complexity_with_cfg = edges - vertexes + 2 in
+             StatisticsCollector.increase_complexity ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg ~info;
+           with
+           | CFG.SomethingIsWrong -> printfn "Oops";
+          in
+          process ()
        | _ -> ();
      ) 
   }

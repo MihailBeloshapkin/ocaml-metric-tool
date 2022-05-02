@@ -98,17 +98,17 @@ let process_cmti_typedtree filename typedtree =
   with_info filename (fun info -> typed_on_signature info typedtree)
 ;;
 
-let process_metrics ~parsetree ~filename ~metric =
+let process_metrics ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   match metric with
-  | "loc"      -> LOC.run filename;
-  | "halstead" -> Holsted.run parsetree;
-  | "cc"       -> CCComplexity.run parsetree;
+  | "loc"      -> LOC.run filename info;
+  | "halstead" -> Holsted.run parsetree info;
+  | "cc"       -> CCComplexity.run parsetree info;
   | _          -> ();
 ;;
 
-let process metric filename =
+let process metric (linfo : StatisticsCollector.module_info ref) filename =
   Clflags.error_style := Some Misc.Error_style.Contextual;
   Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
   let with_info f =
@@ -125,7 +125,7 @@ let process metric filename =
       let parsetree = Compile_common.parse_impl info in
       (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
       (*untyped_on_structure info parsetree; *)
-      process_metrics ~parsetree ~filename ~metric;
+      process_metrics ~parsetree ~filename ~metric ~info:linfo;
     in
     with_info (fun info ->
         if String.is_suffix info.source_file ~suffix:".ml"
@@ -201,13 +201,16 @@ let process_untyped filename =
 
 let usage_msg = "..."
 let source = ref ""
+let dir = ref ""
 let metric = ref ""
 let anon_fun filename = source := filename
 let data = [("-m", Arg.Set_string metric, "Set metric")]
 
 let () =
   Arg.parse data anon_fun usage_msg;
-  process !metric !source;
-  StatisticsCollector.report !metric;
+  (*process !metric !source;
+  StatisticsCollector.report !metric;*)
+  ProcessDune.analyze_directory !source (process !metric);
+  StatisticsCollector.report_all ();
   ()
 ;;

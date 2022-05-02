@@ -22,16 +22,18 @@ type holsted_data = {
   mutable theoretical_volume : float
 };;
 
-(* Contains info about cyclomatic complexity *)
-let cc_data = ref []
-
 let holsted = { operators = []; operands = []; unique_operators = []; unique_operands = []; volume = 0.0; theoretical_volume = 0.0 }
 
-let loc_metric = { lines = 0; lloc = 0 ; comments = 0}
-
-let holsted_for_functions : holsted_data list ref = ref [] 
+type module_info = {
+  name                      : string;
+  mutable cc_data           : complexity list option;
+  mutable holsted_for_funcs : holsted_data list option;
+  mutable loc_metric        : loc option
+};;
 
 let distinct_list li = li |> List.fold ~f:(fun acc x -> if not @@ List.exists ~f:(fun el -> String.equal el x) acc then x::acc else acc) ~init:[]
+
+let common_data : module_info list ref = ref []
 
 let calc_holsted ~u_operators ~u_operands =
   let n1 = u_operators |> List.length |> float in
@@ -39,7 +41,7 @@ let calc_holsted ~u_operators ~u_operands =
   n1 *. (Float.log n1) +. n2 *. (Float.log n2)
 ;;
 
-let add_holsted_for_func (local_operators : string list) (local_operands : string list) =
+let add_holsted_for_func (local_operators : string list) (local_operands : string list) ~info=
   let u_operators = distinct_list local_operators in
   let u_operands = distinct_list local_operands in
   let vol = (local_operators |> List.length |> float) +. (local_operands |> List.length |> float) in
@@ -51,32 +53,51 @@ let add_holsted_for_func (local_operators : string list) (local_operands : strin
       unique_operands = u_operands; 
       volume = vol; 
       theoretical_volume = theor_vol 
-      } 
-    in
-  holsted_for_functions := new_data::!holsted_for_functions
+    } 
+  in
+  info := 
+    { (!info) with  
+        holsted_for_funcs =
+          match (!info).holsted_for_funcs with
+          | Some data -> Some (new_data::data)
+          | None -> Some [new_data] 
+    };
+(*
+  holsted_for_functions := new_data::!holsted_for_functions *)
 ;;
 
-let increase_complexity ~lcomplexity ~lcomplexity_cfg =
-  cc_data := { complexity = lcomplexity; complexity_with_cfg = lcomplexity_cfg }::!cc_data;
+let increase_complexity ~lcomplexity ~lcomplexity_cfg ~info =
+  let new_data = { complexity = lcomplexity; complexity_with_cfg = lcomplexity_cfg } in
+  info := 
+    { (!info) with  
+        cc_data = 
+          match (!info).cc_data with
+          | Some data -> Some (new_data::data)
+          | None -> Some [new_data]
+    }
 ;; 
 
 exception SomethingWrong
 
-let set_loc ~lines ~lloc ~comments = 
-  loc_metric.lines <- lines;
-  loc_metric.lloc <- lloc;
-  loc_metric.comments <- comments
+let set_loc ~lines ~lloc ~comments ~info=
+  let loc_metric = { lines; lloc; comments } in 
+  info := { (!info) with loc_metric = (Some loc_metric) }
 ;;
 
-let report_loc () =
-  Caml.Format.printf "\nLOC:\n";
-  Caml.Format.printf "  Lines: %d\n" loc_metric.lines;
-  Caml.Format.printf "  Logical lines: %d\n" loc_metric.lloc;
-  Caml.Format.printf "  Comments: %d\n" loc_metric.comments;
+
+let add_module_info info =
+  common_data := info::!common_data;
 ;;
 
-let report_holsted () =
-  !holsted_for_functions 
+let report_loc loc_metric =
+  Caml.Format.printf "\n  LOC:\n";
+  Caml.Format.printf "    Lines: %d\n" loc_metric.lines;
+  Caml.Format.printf "    Logical lines: %d\n" loc_metric.lloc;
+  Caml.Format.printf "    Comments: %d\n" loc_metric.comments;
+;;
+
+let report_holsted holsted_for_functions =
+  holsted_for_functions 
   |> List.rev 
   |> List.iteri
     ~f: 
@@ -94,21 +115,28 @@ let report_holsted () =
     )
 ;;
 
-let report_cc () =
-  !cc_data
+let report_cc cc_data =
+  cc_data
   |> List.rev
   |> List.iteri
     ~f:
     (fun i x ->
-      printf "\nfunc: %d\n" i;
-      printf "Cyclomatic complexity:\n";
-      printf "  without CFG: %i\n  with CFG: %i\n\n" x.complexity x.complexity_with_cfg;
+      printf "\n  func: %d\n" i;
+      printf "  Cyclomatic complexity:\n";
+      printf "    without CFG: %i\n  with CFG: %i\n\n" x.complexity x.complexity_with_cfg;
     )
 ;;
 
-let report = function 
-  | "loc"      -> report_loc ();
-  | "halstead" -> report_holsted ();
-  | "cc"       -> report_cc ();
-  | _          -> ();
+let report_all () =
+  !common_data
+  |> List.iter
+     ~f:(fun x -> 
+          printfn "\nModule: %s\n" x.name;
+          match x.loc_metric with
+          | Some data -> report_loc data
+          | None -> ();
+          match x.cc_data with
+          | Some data -> report_cc data
+          | None -> ()
+        )
 ;;

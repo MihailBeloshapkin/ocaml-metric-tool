@@ -96,7 +96,7 @@ let analyze_apply ex li =
   concat_prog_data [data1; data2]
 ;;
 
-let run parsetree =
+let run parsetree info =
   let it = {
   Ast_iterator.default_iterator with
    expr = 
@@ -124,7 +124,7 @@ let run parsetree =
          in
          let local_it = process_function acc Ast_iterator.default_iterator in
          local_it.expr local_it ex;
-         StatisticsCollector.add_holsted_for_func !acc.operators !acc.operands;
+         StatisticsCollector.add_holsted_for_func !acc.operators !acc.operands ~info;
        | _ -> ()
      ) 
   }
