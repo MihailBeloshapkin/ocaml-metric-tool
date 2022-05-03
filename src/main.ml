@@ -2,6 +2,7 @@ open Caml
 open Base
 open Zanuda_core
 open Utils
+open Addition
 
 let untyped_linters =
   let open UntypedLints in
@@ -101,14 +102,19 @@ let process_cmti_typedtree filename typedtree =
 let process_metrics ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
+  let open GetStatistics in
+  let iter = run Ast_iterator.default_iterator in
+  iter.structure iter parsetree
+  (*
   match metric with
   | "loc"      -> LOC.run filename info;
   | "halstead" -> Holsted.run parsetree info;
   | "cc"       -> CCComplexity.run parsetree info;
   | _          -> ();
+  *)
 ;;
 
-let process metric (linfo : StatisticsCollector.module_info ref) filename =
+let process metric linfo filename =
   Clflags.error_style := Some Misc.Error_style.Contextual;
   Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
   let with_info f =
@@ -199,18 +205,25 @@ let process_untyped filename =
   ()
 ;;
 
-let usage_msg = "..."
-let source = ref ""
-let dir = ref ""
-let metric = ref ""
-let anon_fun filename = source := filename
-let data = [("-m", Arg.Set_string metric, "Set metric")]
-
 let () =
-  Arg.parse data anon_fun usage_msg;
+  let open Config in
+  let open StatisticsCollector in
+  parse_args ();
+  let () =
+    match mode () with
+    | Config.Unspecified -> ()
+    | File (filename, metric) ->
+       
+      let info = ref { name = filename; cc_data = None; holsted_for_funcs = None; loc_metric = None } in
+      process metric info filename;
+      add_module_info !info;
+    | Dir (source, metric) ->
+      ProcessDune.analyze_directory source (process metric);
+    | _ -> ()
+  in
+  (*Arg.parse data anon_fun usage_msg;*)
   (*process !metric !source;
   StatisticsCollector.report !metric;*)
-  ProcessDune.analyze_directory !source (process !metric);
-  StatisticsCollector.report_all ();
+  report_all ();
   ()
 ;;

@@ -87,7 +87,7 @@ let build_cfg (expr_func : Parsetree.expression) =
     let new_id = generate_id id_set in
     let new_vertex = G.V.create { id = new_id; data = "let" } in
     G.add_vertex g new_vertex;
-    G.add_edge g prev_vertex new_vertex ;
+    G.add_edge g prev_vertex new_vertex;
     List.iter ~f:(fun x -> if contains_branching x.pvb_expr then process_builder x.pvb_expr new_vertex) vb;
     process_builder exp new_vertex;
     | Pexp_fun (_, _, _, exp) ->
@@ -112,7 +112,7 @@ let build_cfg (expr_func : Parsetree.expression) =
     let new_end_id = generate_id id_set in
     let new_end_vertex = G.V.create { id = new_end_id; data = "end-point" } in
     List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;
-    | Pexp_match (_, exprs) 
+    | Pexp_match (_, exprs)
     | Pexp_function (exprs) ->
     let new_id = generate_id id_set in
     let new_vertex = G.V.create { id = new_id; data = "match" } in

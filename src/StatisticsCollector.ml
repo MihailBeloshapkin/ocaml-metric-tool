@@ -123,7 +123,7 @@ let report_cc cc_data =
     (fun i x ->
       printf "\n  func: %d\n" i;
       printf "  Cyclomatic complexity:\n";
-      printf "    without CFG: %i\n  with CFG: %i\n\n" x.complexity x.complexity_with_cfg;
+      printf "    without CFG: %i\n    with CFG: %i\n\n" x.complexity x.complexity_with_cfg;
     )
 ;;
 
@@ -132,11 +132,8 @@ let report_all () =
   |> List.iter
      ~f:(fun x -> 
           printfn "\nModule: %s\n" x.name;
-          match x.loc_metric with
-          | Some data -> report_loc data
-          | None -> ();
-          match x.cc_data with
-          | Some data -> report_cc data
-          | None -> ()
+          Option.iter x.loc_metric ~f:report_loc;
+          Option.iter x.cc_data ~f:report_cc;
+          Option.iter x.holsted_for_funcs ~f:report_holsted;
         )
 ;;
