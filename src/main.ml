@@ -103,15 +103,15 @@ let process_metrics ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   let open GetStatistics in
-  let iter = run Ast_iterator.default_iterator in
+(*  let iter = run Ast_iterator.default_iterator in
   iter.structure iter parsetree
-  (*
+  *)
   match metric with
   | "loc"      -> LOC.run filename info;
   | "halstead" -> Holsted.run parsetree info;
   | "cc"       -> CCComplexity.run parsetree info;
   | _          -> ();
-  *)
+
 ;;
 
 let process metric linfo filename =
