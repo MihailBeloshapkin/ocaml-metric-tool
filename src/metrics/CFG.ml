@@ -72,6 +72,10 @@ let end_branching g start_node =
   sub start_node
 ;;
 
+let show_graph = 
+  G.iter_edges (fun v1 v2 -> printfn "[(%d: %s)---(%d: %s)]" (G.V.label v1).id (G.V.label v1).data (G.V.label v2).id (G.V.label v2).data) 
+;;
+
 let distinct : G.vertex list -> G.vertex list = 
   List.fold ~f:(fun acc x -> if (List.exists ~f:(fun el -> (G.V.label el).id = (G.V.label x).id) acc) then acc else x::acc) ~init:[]
 
@@ -87,14 +91,18 @@ let build_cfg (expr_func : Parsetree.expression) =
   G.add_vertex g start_vertex;
   
   let rec process_builder current_exp prev_vertex = 
-    printf "\n=====================\n";
-    let step () =
-      match current_exp.pexp_desc with
-      | Pexp_let (_, vb, exp) ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "let" } in
+    let update_graph ~new_id ~name =
+      let new_vertex = G.V.create { id = new_id; data = name } in
       G.add_vertex g new_vertex;
       G.add_edge g prev_vertex new_vertex;
+      new_vertex
+    in
+
+    let create_new_node () =
+      let new_id = generate_id id_set in
+      match current_exp.pexp_desc with
+      | Pexp_let (_, vb, exp) ->
+      let new_vertex = update_graph ~new_id ~name:"let" in
       List.iter ~f:(fun x -> if contains_branching x.pvb_expr then process_builder x.pvb_expr new_vertex) vb;
       let end_point = new_vertex |> end_branching g in
       let process_let () = 
@@ -104,28 +112,15 @@ let build_cfg (expr_func : Parsetree.expression) =
       in
       process_let ();
       | Pexp_fun (_, _, _, exp) ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "fun" } in
-      
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex ;
+      let new_vertex = update_graph ~new_id ~name:"fun" in
       process_builder exp new_vertex;
       | Pexp_open (_, exp) -> 
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "open" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
+      let new_vertex = update_graph ~new_id ~name:"open" in
       process_builder exp new_vertex;
       | Pexp_apply _ ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "expr"}  in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
+      update_graph ~new_id ~name:"expr" |> ignore;
       | Pexp_ifthenelse (_, exp1, Some exp2) ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "if-then-else" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
+      let new_vertex = update_graph ~new_id ~name:"if-then-else" in
       process_builder exp1 new_vertex;
       process_builder exp2 new_vertex;
       let endings = end_branching g new_vertex in
@@ -134,10 +129,7 @@ let build_cfg (expr_func : Parsetree.expression) =
       List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;
       | Pexp_match (_, exprs)
       | Pexp_function (exprs) ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "match" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
+      let new_vertex = update_graph ~new_id ~name:"match" in
       List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex) exprs;
       let endings = end_branching g new_vertex in
       let new_end_id = generate_id id_set in
@@ -145,31 +137,10 @@ let build_cfg (expr_func : Parsetree.expression) =
       List.iter
         ~f: (fun ev -> G.add_edge g ev new_end_vertex) 
         endings;
-      | Pexp_sequence (exp1, exp2) ->
-      process_builder exp1 prev_vertex;
-      let end_point = prev_vertex |> end_branching g in
-      let process_sequence () =
-        match distinct end_point with
-        | [id] -> process_builder exp2 id;
-        | _ -> raise SomethingIsWrong
-      in
-      process_sequence ()
-      | Pexp_ident (_) ->
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "ident" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
-      | Pexp_constant (_) -> 
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "constant" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
-      | Pexp_construct _ -> 
-      let new_id = generate_id id_set in
-      let new_vertex = G.V.create { id = new_id; data = "construct" } in
-      G.add_vertex g new_vertex;
-      G.add_edge g prev_vertex new_vertex;
-      | _ -> ();
+      | Pexp_ident (_)    -> update_graph ~new_id ~name:"ident" |> ignore;
+      | Pexp_constant (_) -> update_graph ~new_id ~name:"constant" |> ignore
+      | Pexp_construct _  -> update_graph ~new_id ~name:"construct" |> ignore
+      | _                 -> update_graph ~new_id ~name:"undefined node" |> ignore
     in
     
     match current_exp.pexp_desc with
@@ -182,9 +153,10 @@ let build_cfg (expr_func : Parsetree.expression) =
         | _ -> raise SomethingIsWrong
       in
       process_sequence ()
-    | _ -> ();
+    | _ -> create_new_node ()
   in
-  
+
   process_builder expr_func start_vertex;
+  show_graph g;
   G.nb_edges g, G.nb_vertex g
 ;;
