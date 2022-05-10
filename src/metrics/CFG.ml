@@ -30,6 +30,17 @@ module Edge = struct
 end
 module G = Imperative.Digraph.AbstractLabeled(Node)(Edge)
 
+module Dot = Graph.Graphviz.Dot(struct
+  include G (* use the graph module from above *)
+  let edge_attributes _ = []
+  let default_edge_attributes _ = []
+  let get_subgraph _ = None
+  let vertex_attributes _ = [`Shape `Box]
+  let vertex_name v = String.concat [string_of_int (G.V.label v).id]
+  let default_vertex_attributes _ = []
+  let graph_attributes _ = []
+end)
+
 let contains_branching exp =
   let find_branches fallback =
     {
@@ -97,7 +108,12 @@ let build_cfg (expr_func : Parsetree.expression) =
       G.add_edge g prev_vertex new_vertex;
       new_vertex
     in
-
+    let add_end_point ~new_vertex =
+      let endings = end_branching g new_vertex in
+      let new_end_id = generate_id id_set in
+      let new_end_vertex = G.V.create { id = new_end_id; data = "end_point" } in
+      List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;
+    in
     let create_new_node () =
       let new_id = generate_id id_set in
       match current_exp.pexp_desc with
@@ -105,58 +121,58 @@ let build_cfg (expr_func : Parsetree.expression) =
       let new_vertex = update_graph ~new_id ~name:"let" in
       List.iter ~f:(fun x -> if contains_branching x.pvb_expr then process_builder x.pvb_expr new_vertex) vb;
       let end_point = new_vertex |> end_branching g in
-      let process_let () = 
+      let () = 
         match distinct end_point with
         | [v] -> process_builder exp v
-        | _ -> raise SomethingIsWrong
-      in
-      process_let ();
+        | _ -> raise SomethingIsWrong 
+      in ()
       | Pexp_fun (_, _, _, exp) ->
       let new_vertex = update_graph ~new_id ~name:"fun" in
       process_builder exp new_vertex;
-      | Pexp_open (_, exp) -> 
+      | Pexp_open (_, exp) ->
       let new_vertex = update_graph ~new_id ~name:"open" in
       process_builder exp new_vertex;
       | Pexp_apply _ ->
       update_graph ~new_id ~name:"expr" |> ignore;
       | Pexp_ifthenelse (_, exp1, Some exp2) ->
-      let new_vertex = update_graph ~new_id ~name:"if-then-else" in
+      let new_vertex = update_graph ~new_id ~name:"if_then_else" in
       process_builder exp1 new_vertex;
       process_builder exp2 new_vertex;
-      let endings = end_branching g new_vertex in
+      add_end_point ~new_vertex;
+      (*let endings = end_branching g new_vertex in
       let new_end_id = generate_id id_set in
-      let new_end_vertex = G.V.create { id = new_end_id; data = "end-point" } in
-      List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;
+      let new_end_vertex = G.V.create { id = new_end_id; data = "end_point" } in
+      List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;*)
       | Pexp_match (_, exprs)
       | Pexp_function (exprs) ->
       let new_vertex = update_graph ~new_id ~name:"match" in
       List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex) exprs;
-      let endings = end_branching g new_vertex in
+      add_end_point ~new_vertex;
+      (*let endings = end_branching g new_vertex in
       let new_end_id = generate_id id_set in
-      let new_end_vertex = G.V.create { id = new_end_id; data = "end-point" } in
+      let new_end_vertex = G.V.create { id = new_end_id; data = "end_point" } in
       List.iter
         ~f: (fun ev -> G.add_edge g ev new_end_vertex) 
-        endings;
-      | Pexp_ident (_)    -> update_graph ~new_id ~name:"ident" |> ignore;
-      | Pexp_constant (_) -> update_graph ~new_id ~name:"constant" |> ignore
+        endings;*)
+      | Pexp_ident _      -> update_graph ~new_id ~name:"ident" |> ignore;
+      | Pexp_constant _   -> update_graph ~new_id ~name:"constant" |> ignore
       | Pexp_construct _  -> update_graph ~new_id ~name:"construct" |> ignore
       | _                 -> update_graph ~new_id ~name:"undefined node" |> ignore
     in
-    
     match current_exp.pexp_desc with
     | Pexp_sequence (exp1, exp2) ->
       process_builder exp1 prev_vertex;
       let end_point = prev_vertex |> end_branching g in
-      let process_sequence () =
+      let () =
         match distinct end_point with
         | [id] -> process_builder exp2 id;
         | _ -> raise SomethingIsWrong
-      in
-      process_sequence ()
+      in ()
     | _ -> create_new_node ()
   in
-
   process_builder expr_func start_vertex;
   show_graph g;
+  let file = open_out_bin "../../cfgs/cfg.dot" in
+  let () = Dot.output_graph file g in
   G.nb_edges g, G.nb_vertex g
 ;;
