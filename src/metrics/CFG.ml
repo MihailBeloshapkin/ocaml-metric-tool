@@ -139,21 +139,11 @@ let build_cfg (expr_func : Parsetree.expression) =
       process_builder exp1 new_vertex;
       process_builder exp2 new_vertex;
       add_end_point ~new_vertex;
-      (*let endings = end_branching g new_vertex in
-      let new_end_id = generate_id id_set in
-      let new_end_vertex = G.V.create { id = new_end_id; data = "end_point" } in
-      List.iter ~f: (fun ev -> G.add_edge g ev new_end_vertex) endings;*)
       | Pexp_match (_, exprs)
       | Pexp_function (exprs) ->
       let new_vertex = update_graph ~new_id ~name:"match" in
       List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex) exprs;
       add_end_point ~new_vertex;
-      (*let endings = end_branching g new_vertex in
-      let new_end_id = generate_id id_set in
-      let new_end_vertex = G.V.create { id = new_end_id; data = "end_point" } in
-      List.iter
-        ~f: (fun ev -> G.add_edge g ev new_end_vertex) 
-        endings;*)
       | Pexp_ident _      -> update_graph ~new_id ~name:"ident" |> ignore;
       | Pexp_constant _   -> update_graph ~new_id ~name:"constant" |> ignore
       | Pexp_construct _  -> update_graph ~new_id ~name:"construct" |> ignore
