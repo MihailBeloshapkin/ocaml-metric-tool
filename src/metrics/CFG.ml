@@ -178,17 +178,5 @@ let build_cfg (expr_func : Parsetree.expression) =
   in
   process_builder expr_func start_vertex;
   show_graph g;
-  (*let open Caml in
-  let new_file_name = "file.txt" in
-  let dir = "~/source/new_linter_dir/mylinter/cfgs/file.txt" in
-  let res = Sys.command "touch ~/source/new_linter_dir/mylinter/cfgs/file.txt" in printf "\nresp:%d\n" res;
-  let () =
-    try
-      let file = open_out_bin "../../cfgs/cfg.dot" in
-      let () = Dot.output_graph file g in
-      ()
-    with
-    | Sys_error _ -> ()
-  in*)
   g
 ;;
