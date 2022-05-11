@@ -4,12 +4,13 @@ open Caml.Format
 type mode =
   | Unspecified
   | Dump of string
-  | File of string * string
-  | Dir of string * string
+  | File of string * string * string option
+  | Dir of string * string * string option
 
 type t =
   { mutable outfile : string option
   ; mutable metric : string
+  ; mutable path_to_save_cfg : string option
   ; mutable outgolint : string option
   ; mutable out_rdjsonl : string option
         (* Spec: https://github.com/reviewdog/reviewdog/tree/master/proto/rdf#rdjson *)
@@ -25,6 +26,7 @@ type t =
 let opts =
   { outfile = None
   ; metric = ""
+  ; path_to_save_cfg = None
   ; outgolint = None
   ; out_rdjsonl = None
   ; mode = Unspecified
@@ -39,10 +41,11 @@ let opts =
 let mode () = opts.mode
 let set_mode m = opts.mode <- m
 let set_dump_file s = set_mode (Dump s)
-let set_in_file s = set_mode (File (s, opts.metric))
-let set_in_dir s = set_mode (Dir (s, opts.metric))
+let set_in_file s = set_mode (File (s, opts.metric, opts.path_to_save_cfg))
+let set_in_dir s = set_mode (Dir (s, opts.metric, opts.path_to_save_cfg))
 let add_include s = opts.extra_includes <- s :: opts.extra_includes
 let set_metric m = opts.metric <- m
+let set_path_cfg p = opts.path_to_save_cfg <- Some p
 let set_out_file s = opts.outfile <- Some s
 let set_out_golint s = opts.outgolint <- Some s
 let set_out_rdjsonl s = opts.out_rdjsonl <- Some s
@@ -88,6 +91,7 @@ let parse_args () =
     [ "-o", Arg.String set_out_file, "Set Markdown output file"
     ; "-dir", Arg.String set_in_dir, "Set root directory of dune project"
     ; "-m", Arg.String set_metric, "Set metric"
+    ; "-p", Arg.String set_path_cfg, "Set path to save cfg (for cc metric)"
     ; "-ogolint", Arg.String set_out_golint, "Set output file in golint format"
     ; "-ordjsonl", Arg.String set_out_rdjsonl, "Set output file in rdjsonl format"
     ; "-ws", Arg.String set_workspace, "Set dune workspace root"

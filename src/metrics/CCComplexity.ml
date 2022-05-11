@@ -5,7 +5,7 @@ open Utils
 open Parsetree
 open Ast_iterator
 
-let run parsetree info =
+let run ?path_to_save parsetree info  =
   let it = {
   Ast_iterator.default_iterator with
    expr = 
@@ -33,17 +33,24 @@ let run parsetree info =
          in
          let local_it = process_function Ast_iterator.default_iterator in
          local_it.expr local_it ex;
-         let process () =
+         let () =
            try
-             let edges, vertexes = CFG.build_cfg ex in
+             let open StatisticsCollector in
+             let graph = CFG.build_cfg ex in
+             let edges = CFG.G.nb_edges graph in
+             let vertexes = CFG.G.nb_vertex graph in
              let complexity_with_cfg = edges - vertexes + 2 in
-             StatisticsCollector.increase_complexity ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg ~info;
+             increase_complexity ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg ~info;
+             match path_to_save with
+             | Some p ->
+             let new_file_name = String.concat [(!info).name; ".dot"] in
+             CFG.save ~new_file_name ~path_to_save:(String.concat [p; "/"]) graph;
+             | None -> ();
            with
            | CFG.SomethingIsWrong -> printfn "Oops";
-          in
-          process ()
+          in ()
        | _ -> ();
-     ) 
+     )
   }
   in
   it.structure it parsetree

@@ -36,7 +36,7 @@ module Dot = Graph.Graphviz.Dot(struct
   let default_edge_attributes _ = []
   let get_subgraph _ = None
   let vertex_attributes _ = [`Shape `Box]
-  let vertex_name v = String.concat [string_of_int (G.V.label v).id]
+  let vertex_name v = string_of_int (G.V.label v).id
   let default_vertex_attributes _ = []
   let graph_attributes _ = []
 end)
@@ -89,6 +89,22 @@ let show_graph =
 
 let distinct : G.vertex list -> G.vertex list = 
   List.fold ~f:(fun acc x -> if (List.exists ~f:(fun el -> (G.V.label el).id = (G.V.label x).id) acc) then acc else x::acc) ~init:[]
+
+(* Saves Control Flow Graph *)
+let save ~new_file_name ~path_to_save g =
+  let open Caml in
+  let full_path = Base.String.concat [path_to_save; new_file_name] in
+  let () =
+    try
+      let file = open_out full_path in
+      let () = Dot.output_graph file g in
+      let png_file_name = Base.String.concat [Filename.chop_suffix new_file_name ".dot"; ".png"] in
+      let png_full_path = Base.String.concat [path_to_save; png_file_name] in
+      ["dot -Tpng "; full_path; " > "; png_full_path] |> Base.String.concat |> Sys.command |> ignore;
+      ()
+    with Sys_error _ -> printf "Error";
+  in ()
+;;
 
 (* Build Control Flow Graph from OCaml Parsetree expression*)
 let build_cfg (expr_func : Parsetree.expression) =
@@ -162,7 +178,17 @@ let build_cfg (expr_func : Parsetree.expression) =
   in
   process_builder expr_func start_vertex;
   show_graph g;
-  let file = open_out_bin "../../cfgs/cfg.dot" in
-  let () = Dot.output_graph file g in
-  G.nb_edges g, G.nb_vertex g
+  (*let open Caml in
+  let new_file_name = "file.txt" in
+  let dir = "~/source/new_linter_dir/mylinter/cfgs/file.txt" in
+  let res = Sys.command "touch ~/source/new_linter_dir/mylinter/cfgs/file.txt" in printf "\nresp:%d\n" res;
+  let () =
+    try
+      let file = open_out_bin "../../cfgs/cfg.dot" in
+      let () = Dot.output_graph file g in
+      ()
+    with
+    | Sys_error _ -> ()
+  in*)
+  g
 ;;

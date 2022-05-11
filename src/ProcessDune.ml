@@ -43,11 +43,14 @@ let fine_module { impl } =
   | _ -> true
 ;;
 
-let analyze_directory path analyzer = 
+let analyze_directory path analyzer =
+  printfn "path: %s" path;
   Unix.chdir path;
   let s =
     let ch = Unix.open_process_in "dune describe" in
+    printfn "\na\n";
     let s = Sexplib.Sexp.input_sexp ch in
+    printfn "\na\n";
     Caml.close_in ch;
     s
   in
@@ -80,7 +83,7 @@ let analyze_directory path analyzer =
             |> List.concat_map ~f:(fun { Library.include_dirs } -> include_dirs)
           in
           List.iter modules
-            ~f:(fun m -> 
+            ~f:(fun m ->
                   let info = ref { name = m.name; cc_data = None; holsted_for_funcs = None; loc_metric = None } in
                   printfn "%s" m.name;
                   Option.iter m.impl ~f:(printf "\n%s\n");
