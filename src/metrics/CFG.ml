@@ -177,6 +177,5 @@ let build_cfg (expr_func : Parsetree.expression) =
     | _ -> create_new_node ()
   in
   process_builder expr_func start_vertex;
-  show_graph g;
   g
 ;;

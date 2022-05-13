@@ -13,9 +13,12 @@ let get_fun_names input =
     expr = (fun _ ex -> exprs := !exprs @ [ex]);
     pat = (fun _ pat -> pats := !pats @ [pat])  
     } in it.structure it input;
-  !pats 
-  |> List.map ~f:(fun p -> match p.ppat_desc with Ppat_var { txt } -> txt | _ -> "" )
-  |> List.filter ~f:(fun name -> not @@ String.equal name "")
+  match List.zip !exprs !pats with 
+  | Ok li -> 
+    li |> List.filter ~f:(fun (e, _) -> match e.pexp_desc with Pexp_fun _ -> true | _ -> false)
+       |> List.map ~f:snd
+       |> List.map ~f:(fun p -> match p.ppat_desc with Ppat_var { txt } -> txt | _ -> "" )  
+  | _ -> []
 ;;
 
 let run ?path_to_save parsetree info  =
