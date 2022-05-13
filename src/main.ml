@@ -104,9 +104,9 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Parsetree in
   let open GetStatistics in
   (*
-  let iter = run Ast_iterator.default_iterator in
-  iter.structure iter parsetree
-  *)
+  let iter = run0 Ast_iterator.default_iterator in
+  iter.structure iter parsetree *)
+  
   match metric with
   | "loc"      -> LOC.run filename info;
   | "halstead" -> Holsted.run parsetree info;
@@ -116,7 +116,6 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
       | Some p ->  CCComplexity.run ~path_to_save:p parsetree info 
       | None -> CCComplexity.run parsetree info in ()
   | _          -> ();
-  
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =

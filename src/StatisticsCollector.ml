@@ -3,6 +3,7 @@ open Caml.Format
 open Utils
 
 type complexity = {
+  mutable f_name                : string;
   mutable complexity          : int;
   mutable complexity_with_cfg : int
 };;
@@ -62,12 +63,11 @@ let add_holsted_for_func (local_operators : string list) (local_operands : strin
           | Some data -> Some (new_data::data)
           | None -> Some [new_data] 
     };
-(*
-  holsted_for_functions := new_data::!holsted_for_functions *)
+
 ;;
 
-let increase_complexity ~lcomplexity ~lcomplexity_cfg ~info =
-  let new_data = { complexity = lcomplexity; complexity_with_cfg = lcomplexity_cfg } in
+let increase_complexity fun_name ~lcomplexity ~lcomplexity_cfg ~info =
+  let new_data = { f_name = fun_name; complexity = lcomplexity; complexity_with_cfg = lcomplexity_cfg } in
   info := 
     { (!info) with  
         cc_data = 
@@ -121,7 +121,7 @@ let report_cc cc_data =
   |> List.iteri
     ~f:
     (fun i x ->
-      printf "\n  func: %d\n" i;
+      printf "\n  func: %s\n" x.f_name;
       printf "  Cyclomatic complexity:\n";
       printf "    without CFG: %i\n    with CFG: %i\n\n" x.complexity x.complexity_with_cfg;
     )
