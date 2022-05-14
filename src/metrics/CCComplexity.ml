@@ -6,8 +6,8 @@ open Parsetree
 open Ast_iterator
 
 let get_fun_names input =
-  let exprs : expression list ref = ref [] in 
-  let pats : pattern list ref = ref [] in
+  let exprs = ref [] in 
+  let pats = ref [] in
   let it = {
     Ast_iterator.default_iterator with
     expr = (fun _ ex -> exprs := !exprs @ [ex]);
@@ -17,7 +17,7 @@ let get_fun_names input =
   | Ok li -> 
     li |> List.filter ~f:(fun (e, _) -> match e.pexp_desc with Pexp_fun _ -> true | _ -> false)
        |> List.map ~f:snd
-       |> List.map ~f:(fun p -> match p.ppat_desc with Ppat_var { txt } -> txt | _ -> "" )  
+       |> List.map ~f:(fun p -> match p.ppat_desc with Ppat_var { txt } -> txt | _ -> "" )
   | _ -> []
 ;;
 
@@ -51,6 +51,7 @@ let run ?path_to_save parsetree info  =
           in
           let local_it = process_function Ast_iterator.default_iterator in
           local_it.expr local_it ex;
+          let name = List.nth fun_names !function_index in
           let () =
             try
               let open StatisticsCollector in
@@ -58,7 +59,6 @@ let run ?path_to_save parsetree info  =
               let edges = CFG.G.nb_edges graph in
               let vertexes = CFG.G.nb_vertex graph in
               let complexity_with_cfg = edges - vertexes + 2 in
-              let name = List.nth fun_names !function_index in
               let fix_results fun_name =
                 increase_complexity fun_name ~lcomplexity:!complexity ~lcomplexity_cfg:complexity_with_cfg ~info;
                 match path_to_save with
@@ -69,10 +69,9 @@ let run ?path_to_save parsetree info  =
                 | None -> ();
               in
              Option.iter ~f:fix_results name;
-             incr function_index;
            with
-           | CFG.SomethingIsWrong -> printfn "Oops";
-          in ()
+           | CFG.SomethingIsWrong -> Option.iter ~f:(printfn "Oops: Module:%s Func:%s\n" (!info).name) name;
+          in incr function_index;
        | _ -> ();
      )
   }

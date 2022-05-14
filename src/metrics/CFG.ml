@@ -67,7 +67,7 @@ let generate_id id_set =
   let new_id = elt + 1 in
   id_set := IdSet.add new_id !id_set;
   new_id
-  | None -> 
+  | None ->
   id_set := IdSet.add 0 !id_set;
   0
 ;;
@@ -106,6 +106,24 @@ let save ~new_file_name ~path_to_save g =
   in ()
 ;;
 
+let remove_seq_from_graph graph start_vertex =
+  let open G in
+  let rec find_non_seq current =
+    match current with
+    | _ when String.equal (G.V.label current).data "seq" ->
+      G.succ graph current |> List.map ~f:find_non_seq |> List.concat;
+    | _ -> [current];
+  in
+  let rec reduce v =
+    let next_non_seq = G.succ graph v |> List.map ~f:find_non_seq |> List.concat in
+    List.iter ~f:(fun new_v -> G.add_edge graph v new_v) next_non_seq; 
+    next_non_seq |> List.filter ~f:(fun current_v -> G.V.compare v current_v <> 0 ) |> List.iter ~f:reduce;
+  in
+  reduce start_vertex;
+  G.iter_vertex (fun v -> if String.equal (G.V.label v).data "seq" then G.remove_vertex graph v else ()) graph;
+  graph
+;;
+
 (* Build Control Flow Graph from OCaml Parsetree expression*)
 let build_cfg (expr_func : Parsetree.expression) =
   let id_set = ref IdSet.empty in
@@ -140,7 +158,7 @@ let build_cfg (expr_func : Parsetree.expression) =
       let () = 
         match distinct end_point with
         | [v] -> process_builder exp v
-        | _ -> raise SomethingIsWrong 
+        | _ -> printf "Let: "; show_graph g; raise SomethingIsWrong
       in ()
       | Pexp_fun (_, _, _, exp) ->
       let new_vertex = update_graph ~new_id ~name:"fun" in
@@ -167,15 +185,16 @@ let build_cfg (expr_func : Parsetree.expression) =
     in
     match current_exp.pexp_desc with
     | Pexp_sequence (exp1, exp2) ->
-      process_builder exp1 prev_vertex;
-      let end_point = prev_vertex |> end_branching g in
+      let new_vertex = update_graph ~new_id:(-1) ~name:"seq" in
+      process_builder exp1 new_vertex;
+      let end_point = new_vertex |> end_branching g in
       let () =
         match distinct end_point with
         | [id] -> process_builder exp2 id;
         | _ -> raise SomethingIsWrong
       in ()
-    | _ -> create_new_node ()
+    | _ -> create_new_node ();
   in
   process_builder expr_func start_vertex;
-  g
+  remove_seq_from_graph g start_vertex
 ;;
