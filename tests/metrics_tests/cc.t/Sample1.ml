@@ -23,6 +23,8 @@ let h x y =
     100
 ;;
 
+let o = 10
+
 let t x y =
   let a = if x > y then x else 0 in
   a
