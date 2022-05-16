@@ -1,5 +1,5 @@
   $ dune build
-  $ mylinter -m cc -dir .
+  $ mylinter -m cc -dir .  
   
   Module: Main
   
@@ -30,3 +30,20 @@
       without CFG: 1
       with CFG: 1
   
+  $ mylinter -m loc -dir .
+
+  Module: Main
+  
+  
+    LOC:
+      Lines: 7
+      Logical lines: 5
+      Comments: 0
+  
+  Module: Mod1
+  
+  
+    LOC:
+      Lines: 3
+      Logical lines: 1
+      Comments: 0
