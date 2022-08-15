@@ -13,7 +13,6 @@ let untyped_linters =
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
   ; (module VarShouldNotBeUsed : LINT.UNTYPED)
-  ;
   ]
 ;;
 
@@ -31,8 +30,7 @@ let typed_linters =
   ; (module IfBool : LINT.TYPED)
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
-  ; (module MonadLaws : LINT.TYPED) 
-    (* * *********************** *)
+  ; (module MonadLaws : LINT.TYPED) (* * *********************** *)
   ]
 ;;
 
@@ -103,19 +101,18 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   let open GetStatistics in
-  (*
-  let iter = run0 Ast_iterator.default_iterator in
-  iter.structure iter parsetree *)
-  
   match metric with
-  | "loc"      -> LOC.run filename info;
-  | "halstead" -> Holsted.run parsetree info;
-  | "cc"       -> 
-    let () = 
+  | "loc" -> LOC.run filename info
+  | "halstead" -> Holsted.run parsetree info
+  | "cc" ->
+    let () =
       match path_to_save with
-      | Some p ->  CCComplexity.run ~path_to_save:p parsetree info 
-      | None -> CCComplexity.run parsetree info in ()
-  | _          -> ();
+      | Some p -> CCComplexity.run ~path_to_save:p parsetree info
+      | None -> CCComplexity.run parsetree info
+    in
+    ()
+  | "cg" -> CognitiveComplexity.run parsetree info
+  | _ -> ()
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
@@ -135,7 +132,12 @@ let process ~path_to_save_cfg ~metric linfo filename =
       let parsetree = Compile_common.parse_impl info in
       (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
       (*untyped_on_structure info parsetree; *)
-      process_metrics ~path_to_save:path_to_save_cfg ~parsetree ~filename ~metric ~info:linfo;
+      process_metrics
+        ~path_to_save:path_to_save_cfg
+        ~parsetree
+        ~filename
+        ~metric
+        ~info:linfo
     in
     with_info (fun info ->
         if String.is_suffix info.source_file ~suffix:".ml"
@@ -217,16 +219,21 @@ let () =
     match mode () with
     | Config.Unspecified -> ()
     | File (filename, metric, path_to_save_cfg) ->
-      let info = ref { name = Filename.chop_suffix filename ".ml"; cc_data = None; holsted_for_funcs = None; loc_metric = None } in
+      let info =
+        ref
+          { name = Filename.chop_suffix filename ".ml"
+          ; cc_data = None
+          ; cogn_compl_data = None
+          ; holsted_for_funcs = None
+          ; loc_metric = None
+          }
+      in
       process ~path_to_save_cfg ~metric info filename;
-      add_module_info !info;
+      add_module_info !info
     | Dir (source, metric, path_to_save_cfg) ->
-      ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric);
+      ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
     | _ -> ()
   in
-  (*Arg.parse data anon_fun usage_msg;*)
-  (*process !metric !source;
-  StatisticsCollector.report !metric;*)
   report_all ();
   ()
 ;;

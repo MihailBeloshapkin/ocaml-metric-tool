@@ -63,12 +63,13 @@ let analyze_directory path analyzer =
   let on_module _ m (info : StatisticsCollector.module_info ref) =
     (* we analyze syntax tree without expanding syntax extensions *)
     Option.iter m.impl ~f:(analyzer info);
-    StatisticsCollector.add_module_info !info;
+    StatisticsCollector.add_module_info !info
   in
   let loop_database () =
     let open StatisticsCollector in
     List.iter db ~f:(function
-        | Executables { modules; requires } -> ()
+        | Executables { modules; requires } ->
+          ()
           (*let extra_paths =
             requires
             |> List.filter_map ~f:(fun uid -> get_library uid)
@@ -82,12 +83,19 @@ let analyze_directory path analyzer =
             |> List.filter_map ~f:(fun uid -> get_library uid)
             |> List.concat_map ~f:(fun { Library.include_dirs } -> include_dirs)
           in
-          List.iter modules
-            ~f:(fun m ->
-                  let info = ref { name = m.name; cc_data = None; holsted_for_funcs = None; loc_metric = None } in
-                  printfn "%s" m.name;
-                  Option.iter m.impl ~f:(printf "\n%s\n");
-                  if fine_module m then on_module extra_paths m info));
+          List.iter modules ~f:(fun m ->
+              let info =
+                ref
+                  { name = m.name
+                  ; cc_data = None
+                  ; cogn_compl_data = None
+                  ; holsted_for_funcs = None
+                  ; loc_metric = None
+                  }
+              in
+              printfn "%s" m.name;
+              Option.iter m.impl ~f:(printf "\n%s\n");
+              if fine_module m then on_module extra_paths m info))
   in
   loop_database ()
 ;;

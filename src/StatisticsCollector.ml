@@ -8,6 +8,11 @@ type complexity =
   ; mutable complexity_with_cfg : int
   }
 
+type cognitive_complexity =
+  { mutable func_name : string
+  ; mutable cogn_complexity : int
+  }
+
 type loc =
   { mutable lines : int
   ; mutable lloc : int
@@ -36,6 +41,7 @@ let holsted =
 type module_info =
   { name : string
   ; mutable cc_data : complexity list option
+  ; mutable cogn_compl_data : cognitive_complexity list option
   ; mutable holsted_for_funcs : holsted_data list option
   ; mutable loc_metric : loc option
   }
@@ -98,6 +104,18 @@ let increase_complexity fun_name ~lcomplexity ~lcomplexity_cfg ~info =
        }
 ;;
 
+let increase_cognitive_complexity ~fun_name ~complexity ~info =
+  let new_data = { func_name = fun_name; cogn_complexity = complexity } in
+  info
+    := { !info with
+         cogn_compl_data =
+           (match !info.cogn_compl_data with
+           | Some data -> Some (new_data :: data)
+           | None -> Some [ new_data ])
+       };
+  ()
+;;
+
 exception SomethingWrong
 
 let set_loc ~lines ~lloc ~comments ~info =
@@ -133,7 +151,7 @@ let report_holsted holsted_for_functions =
 let report_cc cc_data =
   cc_data
   |> List.rev
-  |> List.iteri ~f:(fun i x ->
+  |> List.iter ~f:(fun x ->
          printf "\n  func: %s\n" x.f_name;
          printf "  Cyclomatic complexity:\n";
          printf
@@ -142,11 +160,20 @@ let report_cc cc_data =
            x.complexity_with_cfg)
 ;;
 
+let report_cg cg_data =
+  cg_data
+  |> List.rev
+  |> List.iter ~f:(fun x ->
+         printf "\n  func: %s" x.func_name;
+         printf "\n  Cognitive complexity: %i\n" x.cogn_complexity)
+;;
+
 let report_all () =
   !common_data
   |> List.iter ~f:(fun x ->
          printfn "\nModule: %s\n" x.name;
          Option.iter x.loc_metric ~f:report_loc;
          Option.iter x.cc_data ~f:report_cc;
+         Option.iter x.cogn_compl_data ~f:report_cg;
          Option.iter x.holsted_for_funcs ~f:report_holsted)
 ;;

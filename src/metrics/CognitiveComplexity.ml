@@ -5,49 +5,49 @@ open Utils
 open Parsetree
 open Ast_iterator
 
-let rec get_logic_exp_complexity exp =
-  match exp.pexp_desc with
-  | Pexp_apply (ex, li) ->
-    let op =
-      match ex.pexp_desc with
-      | Pexp_ident { txt; _ } ->
-        let result =
-          match txt with
-          | Lident info -> info
-          | Ldot (_, info) -> info
-          | _ -> ""
-        in
-        result
-      | _ -> ""
-    in
-    let exprs = List.map ~f:snd li in
-    let result =
-      match exprs with
-      | [ arg1; arg2 ] ->
-        let first_result = get_logic_exp_complexity arg1 in
-        let second_result = get_logic_exp_complexity arg2 in
-        List.concat [ first_result; [ op ]; second_result ]
-      | _ -> []
-    in
-    result
-  | _ -> []
+(** Get complexity of logical expression *)
+let get_logical_operators_list exp =
+  let rec sub local_exp =
+    match local_exp.pexp_desc with
+    | Pexp_apply (ex, li) ->
+      let result =
+        match ex.pexp_desc with
+        | Pexp_ident { txt = Lident s; _ } ->
+          let exprs = List.map ~f:snd li in
+          let new_operator_list =
+            match exprs with
+            | [ arg1; arg2 ] when String.equal "&&" s || String.equal "||" s ->
+              let first_result = sub arg1 in
+              let second_result = sub arg2 in
+              List.concat [ first_result; [ s ]; second_result ]
+            | _ -> []
+          in
+          new_operator_list
+        | _ -> []
+      in
+      result
+    | _ -> []
+  in
+  sub exp
 ;;
 
-let check_that_logic_operator_application expr =
+(** checks if the operator is logical operator: && or || *)
+let is_logical_operator expr =
+  let open Longident in
   match expr.pexp_desc with
-  | Pexp_ident { txt; _ } ->
-    let result =
-      match txt with
-      | Lident info -> info
-      | Ldot (_, info) -> info
-      | _ -> ""
-    in
-    String.equal "&&" result || String.equal "||" result
+  | Pexp_ident { txt = Lident s; _ } -> String.equal "&&" s || String.equal "||" s
   | _ -> false
 ;;
 
 (** Process Cognitive complexity *)
-let run0 parsetree info =
+let run parsetree info =
+  let open CCComplexity in
+
+  let cl = ref [] in
+  let fun_names = get_fun_names parsetree in
+  printf "Fun names: ";
+  List.iter ~f:(printf "%s ") fun_names;
+  let function_index = ref 0 in
   let it =
     { Ast_iterator.default_iterator with
       expr =
@@ -67,15 +67,14 @@ let run0 parsetree info =
                     | Pexp_function _
                     | Pexp_match _
                     | Pexp_try _ ->
-                      printfn "\nCC: %i\n" !cognitive_complexity;
                       cognitive_complexity := 1 + !nesting_level + !cognitive_complexity;
                       incr nesting_level;
                       fallback.expr self currentExpr;
                       decr nesting_level
                     | Pexp_apply (op, _) ->
-                      if check_that_logic_operator_application op
+                      if is_logical_operator op
                       then (
-                        let res = get_logic_exp_complexity currentExpr in
+                        let res = get_logical_operators_list currentExpr in
                         List.iter ~f:(fun x -> printfn "%s; " x) res;
                         let complexity_delta =
                           res
@@ -88,24 +87,33 @@ let run0 parsetree info =
                                ~init:("", 0)
                           |> snd
                         in
-                        cognitive_complexity := !cognitive_complexity + complexity_delta;
-                        printfn "Complexity delta: %i" complexity_delta)
-                      else ()
+                        cognitive_complexity := !cognitive_complexity + complexity_delta)
+                      else fallback.expr self currentExpr
+                    | Pexp_let (Asttypes.Recursive, _, _) ->
+                      incr cognitive_complexity;
+                      fallback.expr self currentExpr
                     | _ -> fallback.expr self currentExpr)
               }
             in
             let local_it = process_function Ast_iterator.default_iterator in
             local_it.expr local_it ex;
-            printf "\nCognitive complexity: %i:\n" !cognitive_complexity;
+            let local_fun_name = List.nth fun_names !function_index in
+            incr function_index;
+            let open StatisticsCollector in
+            cl := !cl @ [ !cognitive_complexity ]; 
+            let () =
+              match local_fun_name with
+              | Some name ->
+                increase_cognitive_complexity
+                  ~fun_name:name
+                  ~complexity:!cognitive_complexity
+                  ~info
+              | _ -> ()
+            in
             ()
           | _ -> ())
     }
   in
-  it.structure it parsetree
-;;
-
-let run parsetree info =
-  let open CFG in
-  let cfg = CFG.build_cfg parsetree in
-  ()
+  it.structure it parsetree;
+  List.iter ~f:(printfn "%i " ) !cl;
 ;;

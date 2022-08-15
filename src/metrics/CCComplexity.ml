@@ -20,7 +20,7 @@ let get_fun_names input =
     li
     |> List.filter ~f:(fun (e, _) ->
            match e.pexp_desc with
-           | Pexp_fun _ -> true
+           | Pexp_fun _ | Pexp_function _ -> true
            | _ -> false)
     |> List.map ~f:snd
     |> List.map ~f:(fun p ->
