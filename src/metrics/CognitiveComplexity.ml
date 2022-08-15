@@ -5,33 +5,30 @@ open Utils
 open Parsetree
 open Ast_iterator
 
-(** Get complexity of logical expression *)
-let get_logical_operators_list exp =
-  let rec sub local_exp =
-    match local_exp.pexp_desc with
-    | Pexp_apply (ex, li) ->
-      let result =
-        match ex.pexp_desc with
-        | Pexp_ident { txt = Lident s; _ } ->
-          let exprs = List.map ~f:snd li in
-          let new_operator_list =
-            match exprs with
-            | [ arg1; arg2 ] when String.equal "&&" s || String.equal "||" s ->
-              let first_result = sub arg1 in
-              let second_result = sub arg2 in
-              List.concat [ first_result; [ s ]; second_result ]
-            | _ -> []
-          in
-          new_operator_list
-        | _ -> []
-      in
-      result
-    | _ -> []
-  in
-  sub exp
+(* Get complexity of logical expression *)
+let rec get_logical_operators_list local_exp =
+  match local_exp.pexp_desc with
+  | Pexp_apply (ex, li) ->
+    let result =
+      match ex.pexp_desc with
+      | Pexp_ident { txt = Lident s; _ } ->
+        let exprs = List.map ~f:snd li in
+        let new_operator_list =
+          match exprs with
+          | [ arg1; arg2 ] when String.equal "&&" s || String.equal "||" s ->
+            let first_result = get_logical_operators_list arg1 in
+            let second_result = get_logical_operators_list arg2 in
+            List.concat [ first_result; [ s ]; second_result ]
+          | _ -> []
+        in
+        new_operator_list
+      | _ -> []
+    in
+    result
+  | _ -> []
 ;;
 
-(** checks if the operator is logical operator: && or || *)
+(* checks if the operator is logical operator: && or || *)
 let is_logical_operator expr =
   let open Longident in
   match expr.pexp_desc with
@@ -39,14 +36,10 @@ let is_logical_operator expr =
   | _ -> false
 ;;
 
-(** Process Cognitive complexity *)
+(* Process Cognitive complexity *)
 let run parsetree info =
   let open CCComplexity in
-
-  let cl = ref [] in
   let fun_names = get_fun_names parsetree in
-  printf "Fun names: ";
-  List.iter ~f:(printf "%s ") fun_names;
   let function_index = ref 0 in
   let it =
     { Ast_iterator.default_iterator with
@@ -75,7 +68,6 @@ let run parsetree info =
                       if is_logical_operator op
                       then (
                         let res = get_logical_operators_list currentExpr in
-                        List.iter ~f:(fun x -> printfn "%s; " x) res;
                         let complexity_delta =
                           res
                           |> List.fold
@@ -100,7 +92,6 @@ let run parsetree info =
             let local_fun_name = List.nth fun_names !function_index in
             incr function_index;
             let open StatisticsCollector in
-            cl := !cl @ [ !cognitive_complexity ]; 
             let () =
               match local_fun_name with
               | Some name ->
@@ -114,6 +105,5 @@ let run parsetree info =
           | _ -> ())
     }
   in
-  it.structure it parsetree;
-  List.iter ~f:(printfn "%i " ) !cl;
+  it.structure it parsetree
 ;;

@@ -4,20 +4,10 @@ open Zanuda_core
 
 (** Load source code from the file. *)
 let get_file filename =
-  let ic = open_in filename in
-  let try_read () =
-    try Some (input_line ic) with
-    | End_of_file -> None
-  in
-  let rec sub acc =
-    match try_read () with
-    | None ->
-      close_in ic;
-      acc |> List.rev
-    | Some data -> sub (data :: acc)
-  in
-  let data = sub [] in
-  String.concat ~sep:"\n" data
+  let current_channel = open_in filename in
+  let data = really_input_string current_channel (in_channel_length current_channel) in
+  close_in current_channel;
+  data
 ;;
 
 (** Run LOC metric *)

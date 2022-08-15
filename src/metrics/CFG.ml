@@ -11,7 +11,7 @@ type info =
   ; data : string
   }
 
-exception SomethingIsWrong
+exception CfgBuildFailed
 exception Found
 
 module IdSet = Caml.Set.Make (struct
@@ -188,7 +188,7 @@ let build_cfg (expr_func : Parsetree.expression) =
           | _ ->
             printf "Let: ";
             show_graph g;
-            raise SomethingIsWrong
+            raise CfgBuildFailed
         in
         ()
       | Pexp_fun (_, _, _, exp) ->
@@ -220,7 +220,7 @@ let build_cfg (expr_func : Parsetree.expression) =
       let () =
         match distinct end_point with
         | [ id ] -> process_builder exp2 id
-        | _ -> raise SomethingIsWrong
+        | _ -> raise CfgBuildFailed
       in
       ()
     | _ -> create_new_node ()

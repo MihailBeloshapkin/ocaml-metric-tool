@@ -83,7 +83,7 @@ let run ?path_to_save parsetree info =
                 in
                 Option.iter ~f:fix_results name
               with
-              | CFG.SomethingIsWrong ->
+              | CFG.CfgBuildFailed ->
                 Option.iter ~f:(printfn "Oops: Module:%s Func:%s\n" !info.name) name
             in
             incr function_index
