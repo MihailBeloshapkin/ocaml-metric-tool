@@ -2,49 +2,59 @@ open Base
 open Caml.Format
 open Utils
 
-type complexity =
-  { mutable f_name : string
-  ; mutable complexity : int
-  ; mutable complexity_with_cfg : int
-  }
+module CyclComplexity = struct
+  type t =
+    { mutable func_name : string
+    ; mutable complexity : int
+    ; mutable complexity_with_cfg : int
+    }
+end
 
-type cognitive_complexity =
-  { mutable func_name : string
-  ; mutable cogn_complexity : int
-  }
+module CognComplexity = struct
+  type t =
+    { mutable func_name : string
+    ; mutable cogn_complexity : int
+    }
+end
 
-type loc =
-  { mutable lines : int
-  ; mutable lloc : int
-  ; mutable comments : int
-  }
+module Loc = struct
+  type t =
+    { mutable lines : int
+    ; mutable lloc : int
+    ; mutable comments : int
+    }
+end
 
-type holsted_data =
-  { mutable operators : string list
-  ; mutable operands : string list
-  ; mutable unique_operators : string list
-  ; mutable unique_operands : string list
-  ; mutable volume : float
-  ; mutable theoretical_volume : float
-  }
+module HolsedData = struct
+  type t =
+    { mutable operators : string list
+    ; mutable operands : string list
+    ; mutable unique_operators : string list
+    ; mutable unique_operands : string list
+    ; mutable volume : float
+    ; mutable theoretical_volume : float
+    }
+end
 
 let holsted =
-  { operators = []
-  ; operands = []
-  ; unique_operators = []
-  ; unique_operands = []
-  ; volume = 0.0
-  ; theoretical_volume = 0.0
+  { HolsedData.operators = []
+  ; HolsedData.operands = []
+  ; HolsedData.unique_operators = []
+  ; HolsedData.unique_operands = []
+  ; HolsedData.volume = 0.0
+  ; HolsedData.theoretical_volume = 0.0
   }
 ;;
 
-type module_info =
-  { name : string
-  ; mutable cc_data : complexity list option
-  ; mutable cogn_compl_data : cognitive_complexity list option
-  ; mutable holsted_for_funcs : holsted_data list option
-  ; mutable loc_metric : loc option
-  }
+module ModuleInfo = struct
+  type t =
+    { name : string
+    ; mutable cycl_compl_data : CyclComplexity.t list option
+    ; mutable cogn_compl_data : CognComplexity.t list option
+    ; mutable holsted_for_funcs : HolsedData.t list option
+    ; mutable loc_metric : Loc.t option
+    }
+end
 
 let distinct_list li =
   li
@@ -54,7 +64,7 @@ let distinct_list li =
        ~init:[]
 ;;
 
-let common_data : module_info list ref = ref []
+let common_data : ModuleInfo.t list ref = ref []
 
 let calc_holsted ~u_operators ~u_operands =
   let n1 = u_operators |> List.length |> float in
@@ -67,6 +77,7 @@ let add_holsted_for_func
     (local_operands : string list)
     ~info
   =
+  let open HolsedData in
   let u_operators = distinct_list local_operators in
   let u_operands = distinct_list local_operands in
   let vol =
@@ -82,6 +93,7 @@ let add_holsted_for_func
     ; theoretical_volume = theor_vol
     }
   in
+  let open ModuleInfo in
   info
     := { !info with
          holsted_for_funcs =
@@ -92,19 +104,26 @@ let add_holsted_for_func
 ;;
 
 let increase_complexity fun_name ~lcomplexity ~lcomplexity_cfg ~info =
+  let open CyclComplexity in
+  let open ModuleInfo in
   let new_data =
-    { f_name = fun_name; complexity = lcomplexity; complexity_with_cfg = lcomplexity_cfg }
+    { func_name = fun_name
+    ; complexity = lcomplexity
+    ; complexity_with_cfg = lcomplexity_cfg
+    }
   in
   info
     := { !info with
-         cc_data =
-           (match !info.cc_data with
+         cycl_compl_data =
+           (match !info.cycl_compl_data with
            | Some data -> Some (new_data :: data)
            | None -> Some [ new_data ])
        }
 ;;
 
 let increase_cognitive_complexity ~fun_name ~complexity ~info =
+  let open CognComplexity in
+  let open ModuleInfo in
   let new_data = { func_name = fun_name; cogn_complexity = complexity } in
   info
     := { !info with
@@ -119,13 +138,15 @@ let increase_cognitive_complexity ~fun_name ~complexity ~info =
 exception SomethingWrong
 
 let set_loc ~lines ~lloc ~comments ~info =
+  let open Loc in
   let loc_metric = { lines; lloc; comments } in
-  info := { !info with loc_metric = Some loc_metric }
+  info := { !info with ModuleInfo.loc_metric = Some loc_metric }
 ;;
 
 let add_module_info info = common_data := info :: !common_data
 
 let report_loc loc_metric =
+  let open Loc in
   Caml.Format.printf "\n  LOC:\n";
   Caml.Format.printf "    Lines: %d\n" loc_metric.lines;
   Caml.Format.printf "    Logical lines: %d\n" loc_metric.lloc;
@@ -133,6 +154,7 @@ let report_loc loc_metric =
 ;;
 
 let report_holsted holsted_for_functions =
+  let open HolsedData in
   holsted_for_functions
   |> List.rev
   |> List.iteri ~f:(fun i x ->
@@ -149,10 +171,11 @@ let report_holsted holsted_for_functions =
 ;;
 
 let report_cc cc_data =
+  let open CyclComplexity in
   cc_data
   |> List.rev
   |> List.iter ~f:(fun x ->
-         printf "\n  func: %s\n" x.f_name;
+         printf "\n  func: %s\n" x.func_name;
          printf "  Cyclomatic complexity:\n";
          printf
            "    without CFG: %i\n    with CFG: %i\n\n"
@@ -161,6 +184,7 @@ let report_cc cc_data =
 ;;
 
 let report_cg cg_data =
+  let open CognComplexity in
   cg_data
   |> List.rev
   |> List.iter ~f:(fun x ->
@@ -169,11 +193,12 @@ let report_cg cg_data =
 ;;
 
 let report_all () =
+  let open ModuleInfo in
   !common_data
   |> List.iter ~f:(fun x ->
          printfn "\nModule: %s\n" x.name;
          Option.iter x.loc_metric ~f:report_loc;
-         Option.iter x.cc_data ~f:report_cc;
+         Option.iter x.cycl_compl_data ~f:report_cc;
          Option.iter x.cogn_compl_data ~f:report_cg;
          Option.iter x.holsted_for_funcs ~f:report_holsted)
 ;;

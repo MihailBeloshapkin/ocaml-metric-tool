@@ -214,6 +214,7 @@ let process_untyped filename =
 let () =
   let open Config in
   let open StatisticsCollector in
+  let open StatisticsCollector.ModuleInfo in
   parse_args ();
   let () =
     match mode () with
@@ -222,7 +223,7 @@ let () =
       let info =
         ref
           { name = Filename.chop_suffix filename ".ml"
-          ; cc_data = None
+          ; cycl_compl_data = None
           ; cogn_compl_data = None
           ; holsted_for_funcs = None
           ; loc_metric = None

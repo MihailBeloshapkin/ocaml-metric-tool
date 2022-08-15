@@ -60,13 +60,14 @@ let analyze_directory path analyzer =
         | Library l when String.equal name l.uid -> Some l
         | _ -> None)
   in
-  let on_module _ m (info : StatisticsCollector.module_info ref) =
+  let on_module _ m (info : StatisticsCollector.ModuleInfo.t ref) =
     (* we analyze syntax tree without expanding syntax extensions *)
     Option.iter m.impl ~f:(analyzer info);
     StatisticsCollector.add_module_info !info
   in
   let loop_database () =
     let open StatisticsCollector in
+    let open StatisticsCollector.ModuleInfo in
     List.iter db ~f:(function
         | Executables { modules; requires } ->
           ()
@@ -87,7 +88,7 @@ let analyze_directory path analyzer =
               let info =
                 ref
                   { name = m.name
-                  ; cc_data = None
+                  ; cycl_compl_data = None
                   ; cogn_compl_data = None
                   ; holsted_for_funcs = None
                   ; loc_metric = None
