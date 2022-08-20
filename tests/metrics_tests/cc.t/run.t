@@ -3,6 +3,7 @@
   
   Module: Sample1
   
+  
     func: f
     Cyclomatic complexity:
       without CFG: 2
