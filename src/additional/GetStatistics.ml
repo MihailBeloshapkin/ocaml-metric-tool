@@ -89,3 +89,21 @@ let run0 fallback =
       )
   }
 ;;
+
+let run1 fallback =
+  {
+    fallback with
+    structure_item = 
+      (fun self str_it ->
+        match str_it.pstr_desc with
+        | Pstr_value (_, vb) ->
+          printf "\nNew item:";
+          List.iter ~f:(fun x -> 
+            Pprintast.pattern Format.std_formatter x.pvb_pat;
+            printf "\n Expr:: ";
+            Pprintast.expression Format.std_formatter x.pvb_expr) 
+            vb;
+        | _ -> ()
+      )
+  }
+;;

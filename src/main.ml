@@ -8,7 +8,6 @@ let untyped_linters =
   let open UntypedLints in
   let open Metrics in
   [ (module GuardInsteadOfIf : LINT.UNTYPED)
-  ; (module Dollar : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
@@ -101,6 +100,9 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   let open GetStatistics in
+  let it = run1 Ast_iterator.default_iterator in
+  it.structure it parsetree;
+  (*
   match metric with
   | "loc" -> LOC.run filename info
   | "halstead" -> Holsted.run parsetree info
@@ -112,7 +114,13 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
     in
     ()
   | "cg" -> CognitiveComplexity.run parsetree info
+  | "all" ->
+    LOC.run filename info;
+    Holsted.run parsetree info;
+    CCComplexity.run parsetree info;
+    CognitiveComplexity.run parsetree info
   | _ -> ()
+  *)
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
