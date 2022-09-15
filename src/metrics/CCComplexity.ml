@@ -6,31 +6,6 @@ open Parsetree
 open Ast_iterator
 open MetricUtils
 
-let get_fun_names input =
-  let exprs = ref [] in
-  let pats = ref [] in
-  let it =
-    { Ast_iterator.default_iterator with
-      expr = (fun _ ex -> exprs := !exprs @ [ ex ])
-    ; pat = (fun _ pat -> pats := !pats @ [ pat ])
-    }
-  in
-  it.structure it input;
-  match List.zip !exprs !pats with
-  | Ok li ->
-    li
-    |> List.filter ~f:(fun (e, _) ->
-         match e.pexp_desc with
-         | Pexp_fun _ | Pexp_function _ -> true
-         | _ -> false)
-    |> List.map ~f:snd
-    |> List.map ~f:(fun p ->
-         match p.ppat_desc with
-         | Ppat_var { txt } -> txt
-         | _ -> "")
-  | _ -> []
-;;
-
 (** Process cyclomatic complexity calculation *)
 let run ?path_to_save parsetree info =
   let it =
