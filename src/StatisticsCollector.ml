@@ -27,7 +27,8 @@ end
 
 module HolsedData = struct
   type t =
-    { mutable operators : string list
+    { func_name : string
+    ; mutable operators : string list
     ; mutable operands : string list
     ; mutable unique_operators : string list
     ; mutable unique_operands : string list
@@ -36,6 +37,7 @@ module HolsedData = struct
     }
 end
 
+(*
 let holsted =
   { HolsedData.operators = []
   ; HolsedData.operands = []
@@ -45,6 +47,7 @@ let holsted =
   ; HolsedData.theoretical_volume = 0.0
   }
 ;;
+*)
 
 module ModuleInfo = struct
   type t =
@@ -73,9 +76,10 @@ let calc_holsted ~u_operators ~u_operands =
 ;;
 
 let add_holsted_for_func
-    (local_operators : string list)
-    (local_operands : string list)
-    ~info
+  fun_name
+  (local_operators : string list)
+  (local_operands : string list)
+  ~info
   =
   let open HolsedData in
   let u_operators = distinct_list local_operators in
@@ -85,7 +89,8 @@ let add_holsted_for_func
   in
   let theor_vol = calc_holsted ~u_operators ~u_operands in
   let new_data =
-    { operators = local_operators
+    { func_name = fun_name 
+    ; operators = local_operators
     ; operands = local_operands
     ; unique_operators = u_operators
     ; unique_operands = u_operands
@@ -98,8 +103,8 @@ let add_holsted_for_func
     := { !info with
          holsted_for_funcs =
            (match !info.holsted_for_funcs with
-           | Some data -> Some (new_data :: data)
-           | None -> Some [ new_data ])
+            | Some data -> Some (new_data :: data)
+            | None -> Some [ new_data ])
        }
 ;;
 
@@ -116,8 +121,8 @@ let increase_complexity fun_name ~lcomplexity ~lcomplexity_cfg ~info =
     := { !info with
          cycl_compl_data =
            (match !info.cycl_compl_data with
-           | Some data -> Some (new_data :: data)
-           | None -> Some [ new_data ])
+            | Some data -> Some (new_data :: data)
+            | None -> Some [ new_data ])
        }
 ;;
 
@@ -129,8 +134,8 @@ let increase_cognitive_complexity ~fun_name ~complexity ~info =
     := { !info with
          cogn_compl_data =
            (match !info.cogn_compl_data with
-           | Some data -> Some (new_data :: data)
-           | None -> Some [ new_data ])
+            | Some data -> Some (new_data :: data)
+            | None -> Some [ new_data ])
        };
   ()
 ;;
@@ -157,17 +162,17 @@ let report_holsted holsted_for_functions =
   let open HolsedData in
   holsted_for_functions
   |> List.rev
-  |> List.iteri ~f:(fun i x ->
-         printf "func: %d\n" i;
-         printf "  Operators: ";
-         List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.operators;
-         print_string "\n  Operands: ";
-         List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.operands;
-         print_string "\n  Unique Operators: ";
-         List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.unique_operators;
-         print_string "\n  Unique Operands: ";
-         List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;
-         printf "\n  Volume: %f Theoretical volume: %f \n\n" x.volume x.theoretical_volume)
+  |> List.iter ~f:(fun x ->
+       printf "func: %s\n" x.func_name;
+       printf "  Operators: ";
+       List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.operators;
+       print_string "\n  Operands: ";
+       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.operands;
+       print_string "\n  Unique Operators: ";
+       List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.unique_operators;
+       print_string "\n  Unique Operands: ";
+       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;
+       printf "\n  Volume: %f Theoretical volume: %f \n\n" x.volume x.theoretical_volume)
 ;;
 
 let report_cc cc_data =
@@ -175,12 +180,12 @@ let report_cc cc_data =
   cc_data
   |> List.rev
   |> List.iter ~f:(fun x ->
-         printf "\n  func: %s\n" x.func_name;
-         printf "  Cyclomatic complexity:\n";
-         printf
-           "    without CFG: %i\n    with CFG: %i\n\n"
-           x.complexity
-           x.complexity_with_cfg)
+       printf "\n  func: %s\n" x.func_name;
+       printf "  Cyclomatic complexity:\n";
+       printf
+         "    without CFG: %i\n    with CFG: %i\n\n"
+         x.complexity
+         x.complexity_with_cfg)
 ;;
 
 let report_cg cg_data =
@@ -188,17 +193,17 @@ let report_cg cg_data =
   cg_data
   |> List.rev
   |> List.iter ~f:(fun x ->
-         printf "\n  func: %s" x.func_name;
-         printf "\n  Cognitive complexity: %i\n" x.cogn_complexity)
+       printf "\n  func: %s" x.func_name;
+       printf "\n  Cognitive complexity: %i\n" x.cogn_complexity)
 ;;
 
 let report_all () =
   let open ModuleInfo in
   !common_data
   |> List.iter ~f:(fun x ->
-         printfn "\nModule: %s\n" x.name;
-         Option.iter x.loc_metric ~f:report_loc;
-         Option.iter x.cycl_compl_data ~f:report_cc;
-         Option.iter x.cogn_compl_data ~f:report_cg;
-         Option.iter x.holsted_for_funcs ~f:report_holsted)
+       printfn "\nModule: %s\n" x.name;
+       Option.iter x.loc_metric ~f:report_loc;
+       Option.iter x.cycl_compl_data ~f:report_cc;
+       Option.iter x.cogn_compl_data ~f:report_cg;
+       Option.iter x.holsted_for_funcs ~f:report_holsted)
 ;;

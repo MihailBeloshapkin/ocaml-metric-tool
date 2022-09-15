@@ -87,12 +87,12 @@ let end_branching g start_node =
 
 let show_graph =
   G.iter_edges (fun v1 v2 ->
-      printfn
-        "[(%d: %s)---(%d: %s)]"
-        (G.V.label v1).id
-        (G.V.label v1).data
-        (G.V.label v2).id
-        (G.V.label v2).data)
+    printfn
+      "[(%d: %s)---(%d: %s)]"
+      (G.V.label v1).id
+      (G.V.label v1).data
+      (G.V.label v2).id
+      (G.V.label v2).data)
 ;;
 
 let distinct : G.vertex list -> G.vertex list =
@@ -226,5 +226,7 @@ let build_cfg (expr_func : Parsetree.expression) =
     | _ -> create_new_node ()
   in
   process_builder expr_func start_vertex;
-  remove_seq_from_graph g start_vertex
+  let new_g = remove_seq_from_graph g start_vertex in
+(*  show_graph new_g; *)
+  new_g
 ;;

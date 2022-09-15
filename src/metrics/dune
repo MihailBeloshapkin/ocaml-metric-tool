@@ -1,4 +1,4 @@
 (library
  (name Metrics)
  (libraries zanuda_core ocamlgraph)
- (modules CCComplexity Lexer Holsted LOC CFG CognitiveComplexity))
+ (modules CCComplexity Lexer Holsted LOC CFG CognitiveComplexity MetricUtils))

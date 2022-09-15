@@ -100,9 +100,9 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   let open GetStatistics in
-  let it = run1 Ast_iterator.default_iterator in
+  (*let it = run1 Ast_iterator.default_iterator in
   it.structure it parsetree;
-  (*
+  *)
   match metric with
   | "loc" -> LOC.run filename info
   | "halstead" -> Holsted.run parsetree info
@@ -120,7 +120,6 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
     CCComplexity.run parsetree info;
     CognitiveComplexity.run parsetree info
   | _ -> ()
-  *)
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
@@ -148,17 +147,17 @@ let process ~path_to_save_cfg ~metric linfo filename =
         ~info:linfo
     in
     with_info (fun info ->
-        if String.is_suffix info.source_file ~suffix:".ml"
-        then process_structure info
-        else (
-          let () =
-            Caml.Format.eprintf
-              "Don't know to do with file '%s'\n%s %d\n%!"
-              info.source_file
-              Caml.__FILE__
-              Caml.__LINE__
-          in
-          Caml.exit 1))
+      if String.is_suffix info.source_file ~suffix:".ml"
+      then process_structure info
+      else (
+        let () =
+          Caml.Format.eprintf
+            "Don't know to do with file '%s'\n%s %d\n%!"
+            info.source_file
+            Caml.__FILE__
+            Caml.__LINE__
+        in
+        Caml.exit 1))
   in
   ()
 ;;
@@ -202,19 +201,19 @@ let process_untyped filename =
       typed_on_signature info typedtree *)
     in
     with_info (fun info ->
-        if String.is_suffix info.source_file ~suffix:".ml"
-        then process_structure info
-        else if String.is_suffix info.source_file ~suffix:".mli"
-        then process_signature info
-        else (
-          let () =
-            Caml.Format.eprintf
-              "Don't know to do with file '%s'\n%s %d\n%!"
-              info.source_file
-              Caml.__FILE__
-              Caml.__LINE__
-          in
-          Caml.exit 1))
+      if String.is_suffix info.source_file ~suffix:".ml"
+      then process_structure info
+      else if String.is_suffix info.source_file ~suffix:".mli"
+      then process_signature info
+      else (
+        let () =
+          Caml.Format.eprintf
+            "Don't know to do with file '%s'\n%s %d\n%!"
+            info.source_file
+            Caml.__FILE__
+            Caml.__LINE__
+        in
+        Caml.exit 1))
   in
   ()
 ;;

@@ -2,6 +2,7 @@ open Base
 open Caml.Format
 open Zanuda_core
 open Utils
+open MetricUtils
 
 let lint_id = "Holsted Metric"
 let lint_source = LINT.FPCourse
@@ -95,10 +96,11 @@ let analyze_apply ex li =
 let run parsetree info =
   let it =
     { Ast_iterator.default_iterator with
-      expr =
-        (fun _ ex ->
-          match ex.pexp_desc with
-          | Pexp_function _ | Pexp_fun (_, _, _, _) ->
+      structure_item =
+        (fun _ str_it ->
+          match str_it.pstr_desc with
+          | Pstr_value (_, vb) ->
+            let current_fun = (List.hd_exn vb).pvb_expr in
             let acc : program_content ref = ref { operators = []; operands = [] } in
             let process_function (l_acc : program_content ref) fallback =
               { fallback with
@@ -116,8 +118,10 @@ let run parsetree info =
               }
             in
             let local_it = process_function acc Ast_iterator.default_iterator in
-            local_it.expr local_it ex;
-            StatisticsCollector.add_holsted_for_func !acc.operators !acc.operands ~info
+            local_it.expr local_it current_fun;
+            let local_fun_name = get_name (List.hd_exn vb).pvb_pat in
+
+            StatisticsCollector.add_holsted_for_func local_fun_name !acc.operators !acc.operands ~info
           | _ -> ())
     }
   in

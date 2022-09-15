@@ -4,6 +4,7 @@ open Zanuda_core
 open Utils
 open Parsetree
 open Ast_iterator
+open MetricUtils
 
 (* Get complexity of logical expression *)
 let rec get_logical_operators_list local_exp =
@@ -39,14 +40,13 @@ let is_logical_operator expr =
 (* Process Cognitive complexity *)
 let run parsetree info =
   let open CCComplexity in
-  let fun_names = get_fun_names parsetree in
-  let function_index = ref 0 in
   let it =
     { Ast_iterator.default_iterator with
-      expr =
-        (fun _ ex ->
-          match ex.pexp_desc with
-          | Pexp_function _ | Pexp_fun (_, _, _, _) ->
+      structure_item =
+        (fun _ str_it ->
+          match str_it.pstr_desc with
+          | Pstr_value (_, vb) ->
+            let current_fun = (List.hd_exn vb).pvb_expr in
             let nesting_level = ref 0 in
             let cognitive_complexity = ref 0 in
             let process_function fallback =
@@ -88,20 +88,13 @@ let run parsetree info =
               }
             in
             let local_it = process_function Ast_iterator.default_iterator in
-            local_it.expr local_it ex;
-            let local_fun_name = List.nth fun_names !function_index in
-            incr function_index;
+            local_it.expr local_it current_fun;
+            let local_fun_name = get_name (List.hd_exn vb).pvb_pat in
             let open StatisticsCollector in
-            let () =
-              match local_fun_name with
-              | Some name ->
-                increase_cognitive_complexity
-                  ~fun_name:name
-                  ~complexity:!cognitive_complexity
-                  ~info
-              | _ -> ()
-            in
-            ()
+            increase_cognitive_complexity
+              ~fun_name:local_fun_name
+              ~complexity:!cognitive_complexity
+              ~info;
           | _ -> ())
     }
   in
