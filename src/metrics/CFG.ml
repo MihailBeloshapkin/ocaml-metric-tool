@@ -5,6 +5,7 @@ open Utils
 open Parsetree
 open Ast_iterator
 open Graph
+open MetricUtils
 
 type info =
   { id : int
@@ -104,7 +105,7 @@ let distinct : G.vertex list -> G.vertex list =
     ~init:[]
 ;;
 
-(* Saves Control Flow Graph *)
+(** Saves Control Flow Graph *)
 let save ~new_file_name ~path_to_save g =
   let open Caml in
   let full_path = Base.String.concat [ path_to_save; new_file_name ] in
@@ -119,8 +120,7 @@ let save ~new_file_name ~path_to_save g =
       [ "dot -Tpng "; full_path; " > "; png_full_path ]
       |> Base.String.concat
       |> Sys.command
-      |> ignore;
-      ()
+      |> ignore
     with
     | Sys_error _ -> printf "Error"
   in
@@ -132,7 +132,10 @@ let remove_seq_from_graph graph start_vertex =
   let rec find_non_seq current =
     match current with
     | _ when String.equal (G.V.label current).data "seq" ->
-      G.succ graph current |> List.map ~f:find_non_seq |> List.concat
+      G.succ graph current
+      (*|> List.filter ~f:(fun v -> (G.V.label v).id > (G.V.label current).id)*)
+      |> List.map ~f:find_non_seq
+      |> List.concat
     | _ -> [ current ]
   in
   let rec reduce v =
@@ -150,13 +153,49 @@ let remove_seq_from_graph graph start_vertex =
   graph
 ;;
 
-(* Build Control Flow Graph from OCaml Parsetree expression*)
-let build_cfg (expr_func : Parsetree.expression) =
+let get_apply_op_name = function
+  | Pexp_ident { txt = Lident s; _ } -> s
+  | _ -> ""
+;;
+
+let get_nested_functions expr =
+  let nested_functions = ref [] in
+  let fallback = Ast_iterator.default_iterator in 
+  let it =
+    {
+      fallback with
+      expr =
+      (fun self expr ->
+        match expr.pexp_desc with
+        | Pexp_let (_, vb, exp) ->
+          let new_nested_functions =
+            vb
+            |> List.filter ~f:(fun x ->
+                 match x.pvb_expr.pexp_desc with
+                 | Pexp_fun _ -> true
+                 | _ -> false)
+          in
+          nested_functions := !nested_functions @new_nested_functions;
+          fallback.expr self expr; 
+        | _ -> fallback.expr self expr;
+      )
+    }
+  in
+  it.expr it expr;
+  !nested_functions
+  |> List.map ~f:(fun x -> (x.pvb_pat |> get_name, x.pvb_expr))
+;;
+
+(** Build Control Flow Graph from OCaml Parsetree expression*)
+let rec build_cfg current_value_binding =
+  let expr_func = current_value_binding.pvb_expr in
+  let fun_name = current_value_binding.pvb_pat |> get_name in
   let id_set = ref IdSet.empty in
   let open G in
   let g = create () in
   let first_id = 0 in
   let start_vertex = G.V.create { id = first_id; data = "start" } in
+  let back_edges = ref [] in
   id_set := IdSet.add first_id !id_set;
   G.add_vertex g start_vertex;
   let rec process_builder current_exp prev_vertex =
@@ -177,6 +216,19 @@ let build_cfg (expr_func : Parsetree.expression) =
       match current_exp.pexp_desc with
       | Pexp_let (_, vb, exp) ->
         let new_vertex = update_graph ~new_id ~name:"let" in
+        let nested_functions =
+          vb
+          |> List.filter ~f:(fun x ->
+               match x.pvb_expr.pexp_desc with
+               | Pexp_fun _ -> true
+               | _ -> false)
+          |> List.fold 
+            ~f:(fun acc x -> (get_name x.pvb_pat, build_cfg x) :: acc)
+            ~init:[]
+        in
+        printfn "\nNested:\n";
+        List.iter ~f:(fun x -> x |> snd |> show_graph) nested_functions;
+        printfn "\nEnd\n";
         List.iter
           ~f:(fun x ->
             if contains_branching x.pvb_expr then process_builder x.pvb_expr new_vertex)
@@ -197,7 +249,11 @@ let build_cfg (expr_func : Parsetree.expression) =
       | Pexp_open (_, exp) ->
         let new_vertex = update_graph ~new_id ~name:"open" in
         process_builder exp new_vertex
-      | Pexp_apply _ -> update_graph ~new_id ~name:"expr" |> ignore
+      | Pexp_apply (ex, _) ->
+        let operator_name = get_apply_op_name ex.pexp_desc in
+        let new_vertex = update_graph ~new_id ~name:"expr" in
+        if String.equal operator_name fun_name
+        then back_edges := (new_vertex, start_vertex) :: !back_edges
       | Pexp_ifthenelse (_, exp1, Some exp2) ->
         let new_vertex = update_graph ~new_id ~name:"if_then_else" in
         process_builder exp1 new_vertex;
@@ -226,7 +282,15 @@ let build_cfg (expr_func : Parsetree.expression) =
     | _ -> create_new_node ()
   in
   process_builder expr_func start_vertex;
-  let new_g = remove_seq_from_graph g start_vertex in
-(*  show_graph new_g; *)
-  new_g
+  let g_without_seq = remove_seq_from_graph g start_vertex in
+  !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g_without_seq v1 v2);
+  show_graph g;
+  let g0 = create () in
+  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
+  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
+  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
+  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
+  printf "G:";
+  G.iter_vertex (fun x -> printf "%s " (G.V.label x).data) g_without_seq;
+  g_without_seq
 ;;

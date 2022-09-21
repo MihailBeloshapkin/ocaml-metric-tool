@@ -120,8 +120,11 @@ let run parsetree info =
             let local_it = process_function acc Ast_iterator.default_iterator in
             local_it.expr local_it current_fun;
             let local_fun_name = get_name (List.hd_exn vb).pvb_pat in
-
-            StatisticsCollector.add_holsted_for_func local_fun_name !acc.operators !acc.operands ~info
+            StatisticsCollector.add_holsted_for_func
+              local_fun_name
+              !acc.operators
+              !acc.operands
+              ~info
           | _ -> ())
     }
   in

@@ -37,7 +37,7 @@ let is_logical_operator expr =
   | _ -> false
 ;;
 
-(* Process Cognitive complexity *)
+(** Process Cognitive complexity calculation *)
 let run parsetree info =
   let open CCComplexity in
   let it =
@@ -45,10 +45,15 @@ let run parsetree info =
       structure_item =
         (fun _ str_it ->
           match str_it.pstr_desc with
-          | Pstr_value (_, vb) ->
+          | Pstr_value (rec_flag, vb) ->
             let current_fun = (List.hd_exn vb).pvb_expr in
             let nesting_level = ref 0 in
             let cognitive_complexity = ref 0 in
+            let () =
+              match rec_flag with
+              | Asttypes.Recursive -> incr cognitive_complexity
+              | _ -> ()
+            in
             let process_function fallback =
               { fallback with
                 expr =
@@ -94,7 +99,7 @@ let run parsetree info =
             increase_cognitive_complexity
               ~fun_name:local_fun_name
               ~complexity:!cognitive_complexity
-              ~info;
+              ~info
           | _ -> ())
     }
   in

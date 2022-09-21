@@ -38,7 +38,7 @@ let run ?path_to_save parsetree info =
             let () =
               try
                 let open StatisticsCollector in
-                let graph = CFG.build_cfg current_fun in
+                let graph = CFG.build_cfg (List.hd_exn vb) in
                 let edges = CFG.G.nb_edges graph in
                 let vertexes = CFG.G.nb_vertex graph in
                 let complexity_with_cfg = edges - vertexes + 2 in
@@ -60,7 +60,7 @@ let run ?path_to_save parsetree info =
                 fix_results local_fun_name
               with
               | CFG.CfgBuildFailed ->
-                printfn "Oops: Module:%s Func:%s\n" !info.name local_fun_name;
+                printfn "Oops: Module:%s Func:%s\n" !info.name local_fun_name
             in
             ()
           | _ -> ())
