@@ -160,30 +160,32 @@ let get_apply_op_name = function
 
 let get_nested_functions expr =
   let nested_functions = ref [] in
-  let fallback = Ast_iterator.default_iterator in 
+  let fallback = Ast_iterator.default_iterator in
   let it =
-    {
-      fallback with
+    { fallback with
       expr =
-      (fun self expr ->
-        match expr.pexp_desc with
-        | Pexp_let (_, vb, exp) ->
-          let new_nested_functions =
-            vb
-            |> List.filter ~f:(fun x ->
-                 match x.pvb_expr.pexp_desc with
-                 | Pexp_fun _ -> true
-                 | _ -> false)
-          in
-          nested_functions := !nested_functions @new_nested_functions;
-          fallback.expr self expr; 
-        | _ -> fallback.expr self expr;
-      )
+        (fun self expr ->
+          match expr.pexp_desc with
+          | Pexp_let (_, vb, exp) ->
+            let new_nested_functions =
+              vb
+              |> List.filter ~f:(fun x ->
+                   match x.pvb_expr.pexp_desc with
+                   | Pexp_fun _ -> true
+                   | _ -> false)
+            in
+            nested_functions := !nested_functions @ new_nested_functions;
+            fallback.expr self expr
+          | _ -> fallback.expr self expr)
     }
   in
   it.expr it expr;
-  !nested_functions
-  |> List.map ~f:(fun x -> (x.pvb_pat |> get_name, x.pvb_expr))
+  !nested_functions |> List.map ~f:(fun x -> x.pvb_pat |> get_name, x.pvb_expr)
+;;
+
+let is_fun = function
+  | Pexp_fun _ -> true
+  | _ -> false
 ;;
 
 (** Build Control Flow Graph from OCaml Parsetree expression*)
@@ -198,7 +200,8 @@ let rec build_cfg current_value_binding =
   let back_edges = ref [] in
   id_set := IdSet.add first_id !id_set;
   G.add_vertex g start_vertex;
-  let rec process_builder current_exp prev_vertex =
+  (* This huge function iterates on AST nodes recursively and build CFG *)
+  let rec process_builder current_exp prev_vertex nested_exprs call_list =
     let update_graph ~new_id ~name =
       let new_vertex = G.V.create { id = new_id; data = name } in
       G.add_vertex g new_vertex;
@@ -218,25 +221,13 @@ let rec build_cfg current_value_binding =
         let new_vertex = update_graph ~new_id ~name:"let" in
         let nested_functions =
           vb
-          |> List.filter ~f:(fun x ->
-               match x.pvb_expr.pexp_desc with
-               | Pexp_fun _ -> true
-               | _ -> false)
-          |> List.fold 
-            ~f:(fun acc x -> (get_name x.pvb_pat, build_cfg x) :: acc)
-            ~init:[]
+          |> List.filter ~f:(fun x -> is_fun x.pvb_expr.pexp_desc)
+          |> List.map ~f:(fun x -> get_name x.pvb_pat, x.pvb_expr)
         in
-        printfn "\nNested:\n";
-        List.iter ~f:(fun x -> x |> snd |> show_graph) nested_functions;
-        printfn "\nEnd\n";
-        List.iter
-          ~f:(fun x ->
-            if contains_branching x.pvb_expr then process_builder x.pvb_expr new_vertex)
-          vb;
         let end_point = new_vertex |> end_branching g in
         let () =
           match distinct end_point with
-          | [ v ] -> process_builder exp v
+          | [ v ] -> process_builder exp v (nested_exprs @ nested_functions) call_list
           | _ ->
             printf "Let: ";
             show_graph g;
@@ -245,23 +236,34 @@ let rec build_cfg current_value_binding =
         ()
       | Pexp_fun (_, _, _, exp) ->
         let new_vertex = update_graph ~new_id ~name:"fun" in
-        process_builder exp new_vertex
+        process_builder exp new_vertex nested_exprs call_list
       | Pexp_open (_, exp) ->
         let new_vertex = update_graph ~new_id ~name:"open" in
-        process_builder exp new_vertex
+        process_builder exp new_vertex nested_exprs call_list
       | Pexp_apply (ex, _) ->
         let operator_name = get_apply_op_name ex.pexp_desc in
-        let new_vertex = update_graph ~new_id ~name:"expr" in
-        if String.equal operator_name fun_name
-        then back_edges := (new_vertex, start_vertex) :: !back_edges
+        let impl =
+          nested_exprs |> List.find ~f:(fun x -> x |> fst |> String.equal operator_name)
+        in
+        let () =
+          match impl with
+          | Some (name, e) when not @@ List.exists ~f:(String.equal name) call_list ->
+            let new_vertex = update_graph ~new_id ~name:(sprintf "fun: %s" name) in
+            process_builder e new_vertex nested_exprs (name :: call_list)
+          | _ ->
+            let new_vertex = update_graph ~new_id ~name:"expr" in
+            if String.equal operator_name fun_name
+            then back_edges := (new_vertex, start_vertex) :: !back_edges
+        in
+        ()
       | Pexp_ifthenelse (_, exp1, Some exp2) ->
         let new_vertex = update_graph ~new_id ~name:"if_then_else" in
-        process_builder exp1 new_vertex;
-        process_builder exp2 new_vertex;
+        process_builder exp1 new_vertex nested_exprs call_list;
+        process_builder exp2 new_vertex nested_exprs call_list;
         add_end_point ~new_vertex
       | Pexp_match (_, exprs) | Pexp_function exprs ->
         let new_vertex = update_graph ~new_id ~name:"match" in
-        List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex) exprs;
+        List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex nested_exprs call_list) exprs;
         add_end_point ~new_vertex
       | Pexp_ident _ -> update_graph ~new_id ~name:"ident" |> ignore
       | Pexp_constant _ -> update_graph ~new_id ~name:"constant" |> ignore
@@ -271,26 +273,19 @@ let rec build_cfg current_value_binding =
     match current_exp.pexp_desc with
     | Pexp_sequence (exp1, exp2) ->
       let new_vertex = update_graph ~new_id:(-1) ~name:"seq" in
-      process_builder exp1 new_vertex;
+      process_builder exp1 new_vertex nested_exprs call_list;
       let end_point = new_vertex |> end_branching g in
       let () =
         match distinct end_point with
-        | [ id ] -> process_builder exp2 id
+        | [ id ] -> process_builder exp2 id nested_exprs call_list
         | _ -> raise CfgBuildFailed
       in
       ()
     | _ -> create_new_node ()
   in
-  process_builder expr_func start_vertex;
+  process_builder expr_func start_vertex [] [ fun_name ];
   let g_without_seq = remove_seq_from_graph g start_vertex in
   !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g_without_seq v1 v2);
-  show_graph g;
-  let g0 = create () in
-  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
-  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
-  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
-  G.add_vertex g0 (G.V.create { id = 0; data = "io" });
-  printf "G:";
-  G.iter_vertex (fun x -> printf "%s " (G.V.label x).data) g_without_seq;
+  (* show_graph g_without_seq; *)
   g_without_seq
 ;;

@@ -89,7 +89,7 @@ let add_holsted_for_func
   in
   let theor_vol = calc_holsted ~u_operators ~u_operands in
   let new_data =
-    { func_name = fun_name 
+    { func_name = fun_name
     ; operators = local_operators
     ; operands = local_operands
     ; unique_operators = u_operators

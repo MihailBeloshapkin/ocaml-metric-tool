@@ -23,7 +23,15 @@ let h x y =
     100
 ;;
 
-let o = 10
+let o x y =
+  let nested a b =
+    if a > b then 1 else 0
+  in
+  match (x, y) with
+  | (1, 1) -> 1
+  | (1, 2) -> 2
+  | _ -> nested x y
+;;
 
 let t x y =
   let a = if x > y then x else 0 in

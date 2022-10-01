@@ -28,10 +28,16 @@
       with CFG: 4
   
   
+    func: o
+    Cyclomatic complexity:
+      without CFG: 3
+      with CFG: 4
+  
+  
     func: t
     Cyclomatic complexity:
       without CFG: 2
-      with CFG: 2
+      with CFG: 1
   
   
     func: analyze_lident

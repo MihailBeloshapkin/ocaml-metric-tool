@@ -57,8 +57,8 @@ let analyze_directory path analyzer =
   let db = [%of_sexp: t list] s in
   let get_library name =
     List.find_map db ~f:(function
-        | Library l when String.equal name l.uid -> Some l
-        | _ -> None)
+      | Library l when String.equal name l.uid -> Some l
+      | _ -> None)
   in
   let on_module _ m (info : StatisticsCollector.ModuleInfo.t ref) =
     (* we analyze syntax tree without expanding syntax extensions *)
@@ -69,34 +69,34 @@ let analyze_directory path analyzer =
     let open StatisticsCollector in
     let open StatisticsCollector.ModuleInfo in
     List.iter db ~f:(function
-        | Executables { modules; requires } ->
-          ()
-          (*let extra_paths =
+      | Executables { modules; requires } ->
+        ()
+        (*let extra_paths =
             requires
             |> List.filter_map ~f:(fun uid -> get_library uid)
             |> List.concat_map ~f:(fun { Library.include_dirs } -> include_dirs)
           in
           List.iter modules ~f:(fun m -> if fine_module m then on_module extra_paths m)
 *)
-        | Library { Library.modules; requires } ->
-          let extra_paths =
-            requires
-            |> List.filter_map ~f:(fun uid -> get_library uid)
-            |> List.concat_map ~f:(fun { Library.include_dirs } -> include_dirs)
+      | Library { Library.modules; requires } ->
+        let extra_paths =
+          requires
+          |> List.filter_map ~f:(fun uid -> get_library uid)
+          |> List.concat_map ~f:(fun { Library.include_dirs } -> include_dirs)
+        in
+        List.iter modules ~f:(fun m ->
+          let info =
+            ref
+              { name = m.name
+              ; cycl_compl_data = None
+              ; cogn_compl_data = None
+              ; holsted_for_funcs = None
+              ; loc_metric = None
+              }
           in
-          List.iter modules ~f:(fun m ->
-              let info =
-                ref
-                  { name = m.name
-                  ; cycl_compl_data = None
-                  ; cogn_compl_data = None
-                  ; holsted_for_funcs = None
-                  ; loc_metric = None
-                  }
-              in
-              printfn "%s" m.name;
-              Option.iter m.impl ~f:(printf "\n%s\n");
-              if fine_module m then on_module extra_paths m info))
+          printfn "%s" m.name;
+          Option.iter m.impl ~f:(printf "\n%s\n");
+          if fine_module m then on_module extra_paths m info))
   in
   loop_database ()
 ;;
