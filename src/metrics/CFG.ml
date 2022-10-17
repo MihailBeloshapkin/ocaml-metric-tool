@@ -242,6 +242,8 @@ let rec build_cfg current_value_binding =
         process_builder exp new_vertex nested_exprs call_list
       | Pexp_apply (ex, _) ->
         let operator_name = get_apply_op_name ex.pexp_desc in
+        (* printf "I'm here!";
+        List.iter ~f:(fun (_, x) ->  Pprintast.expression Format.std_formatter x) nested_exprs; *)
         let impl =
           nested_exprs |> List.find ~f:(fun x -> x |> fst |> String.equal operator_name)
         in
@@ -268,6 +270,7 @@ let rec build_cfg current_value_binding =
       | Pexp_ident _ -> update_graph ~new_id ~name:"ident" |> ignore
       | Pexp_constant _ -> update_graph ~new_id ~name:"constant" |> ignore
       | Pexp_construct _ -> update_graph ~new_id ~name:"construct" |> ignore
+      | Pexp_constraint (ex, _) -> process_builder ex prev_vertex nested_exprs call_list
       | _ -> update_graph ~new_id ~name:"undefined node" |> ignore
     in
     match current_exp.pexp_desc with
