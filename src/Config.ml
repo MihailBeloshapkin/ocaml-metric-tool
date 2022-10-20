@@ -85,6 +85,13 @@ let recover_filepath filepath =
   filepath
 ;;
 
+let help_info () =
+  printf "  loc -- LOC metric\n";
+  printf "  cc  -- Cyclomatic Complexity\n";
+  printf "  cg  -- Cognitive Complexity\n";
+  printf "  halsted -- Halsted metric\n"
+;;
+
 let parse_args () =
   let open Caml in
   Arg.parse
@@ -102,6 +109,7 @@ let parse_args () =
       , "Dump information about available linters to JSON" )
     ; "-I", Arg.String add_include, "Add extra include path for type checking"
     ; "-v", Arg.Unit set_verbose, "More verbose output"
+    ; "-h", Arg.Unit help_info, "Get metrics info" 
     ]
     set_in_file
     "Calling [mylinter FILES] runs untyped checks on specified files. Use [-dir PATH] \

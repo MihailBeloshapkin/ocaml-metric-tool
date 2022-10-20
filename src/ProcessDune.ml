@@ -44,13 +44,10 @@ let fine_module { impl } =
 ;;
 
 let analyze_directory path analyzer =
-  printfn "path: %s" path;
   Unix.chdir path;
   let s =
     let ch = Unix.open_process_in "dune describe" in
-    printfn "\na\n";
     let s = Sexplib.Sexp.input_sexp ch in
-    printfn "\na\n";
     Caml.close_in ch;
     s
   in
@@ -94,8 +91,6 @@ let analyze_directory path analyzer =
               ; loc_metric = None
               }
           in
-          printfn "%s" m.name;
-          Option.iter m.impl ~f:(printf "\n%s\n");
           if fine_module m then on_module extra_paths m info))
   in
   loop_database ()
