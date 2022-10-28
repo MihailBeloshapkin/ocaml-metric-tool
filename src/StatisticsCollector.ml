@@ -52,10 +52,10 @@ let holsted =
 module ModuleInfo = struct
   type t =
     { name : string
-    ; mutable cycl_compl_data : CyclComplexity.t list option
-    ; mutable cogn_compl_data : CognComplexity.t list option
-    ; mutable holsted_for_funcs : HolsedData.t list option
-    ; mutable loc_metric : Loc.t option
+    ; cycl_compl_data : CyclComplexity.t list option
+    ; cogn_compl_data : CognComplexity.t list option
+    ; holsted_for_funcs : HolsedData.t list option
+    ; loc_metric : Loc.t option
     }
 end
 
@@ -164,14 +164,14 @@ let report_holsted holsted_for_functions =
   |> List.rev
   |> List.iter ~f:(fun x ->
        printf "func: %s\n" x.func_name;
-       printf "  Operators: ";
+       (*printf "  Operators: ";
        List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.operators;
        print_string "\n  Operands: ";
        List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.operands;
        print_string "\n  Unique Operators: ";
        List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.unique_operators;
        print_string "\n  Unique Operands: ";
-       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;
+       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;*)
        printf "\n  Volume: %f Theoretical volume: %f \n\n" x.volume x.theoretical_volume)
 ;;
 
