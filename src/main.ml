@@ -100,7 +100,6 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
   let open GetStatistics in
-  
   (*
   let it = run Ast_iterator.default_iterator in
   it.structure it parsetree;
@@ -115,8 +114,7 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
       | None -> CCComplexity.run parsetree info
     in
     ()
-  | "cg" -> 
-    CognitiveComplexity.run parsetree info;
+  | "cg" -> CognitiveComplexity.run parsetree info
   | "all" ->
     LOC.run filename info;
     Holsted.run parsetree info;
@@ -242,7 +240,7 @@ let () =
       in
       process ~path_to_save_cfg ~metric info filename;
       add_module_info !info;
-      write_data_to_xml !StatisticsCollector.common_data (open_out "example.xml");
+      write_data_to_xml !StatisticsCollector.common_data (open_out "example.xml")
     | Dir (source, metric, path_to_save_cfg) ->
       ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
     | _ -> ()

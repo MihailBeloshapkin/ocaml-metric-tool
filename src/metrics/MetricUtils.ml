@@ -1,4 +1,5 @@
 open Base
+open Xmlm
 open Parsetree
 
 let get_name pat =

@@ -265,7 +265,9 @@ let rec build_cfg current_value_binding =
         add_end_point ~new_vertex
       | Pexp_match (_, exprs) | Pexp_function exprs ->
         let new_vertex = update_graph ~new_id ~name:"match" in
-        List.iter ~f:(fun x -> process_builder x.pc_rhs new_vertex nested_exprs call_list) exprs;
+        List.iter
+          ~f:(fun x -> process_builder x.pc_rhs new_vertex nested_exprs call_list)
+          exprs;
         add_end_point ~new_vertex
       | Pexp_ident _ -> update_graph ~new_id ~name:"ident" |> ignore
       | Pexp_constant _ -> update_graph ~new_id ~name:"constant" |> ignore
