@@ -124,99 +124,47 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
-  Clflags.error_style := Some Misc.Error_style.Contextual;
-  Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
-  let with_info f =
-    Compile_common.with_info
-      ~native:false
-      ~source_file:filename
-      ~tool_name:"asdf"
-      ~output_prefix:"asdf"
-      ~dump_ext:"asdf"
-      f
-  in
-  let () =
-    let process_structure info =
-      let parsetree = Compile_common.parse_impl info in
-      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
-      (*untyped_on_structure info parsetree; *)
-      process_metrics
-        ~path_to_save:path_to_save_cfg
-        ~parsetree
-        ~filename
-        ~metric
-        ~info:linfo
+  try
+    Clflags.error_style := Some Misc.Error_style.Contextual;
+    Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
+    let with_info f =
+      Compile_common.with_info
+        ~native:false
+        ~source_file:filename
+        ~tool_name:"asdf"
+        ~output_prefix:"asdf"
+        ~dump_ext:"asdf"
+        f
     in
-    with_info (fun info ->
-      if String.is_suffix info.source_file ~suffix:".ml"
-      then process_structure info
-      else (
-        let () =
-          Caml.Format.eprintf
-            "Don't know to do with file '%s'\n%s %d\n%!"
-            info.source_file
-            Caml.__FILE__
-            Caml.__LINE__
-        in
-        Caml.exit 1))
-  in
-  ()
-;;
-
-let process_untyped filename =
-  Clflags.error_style := Some Misc.Error_style.Contextual;
-  Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
-  let with_info f =
-    Compile_common.with_info
-      ~native:false
-      ~source_file:filename
-      ~tool_name:"asdf" (* TODO: pass right tool name *)
-      ~output_prefix:"asdf"
-      ~dump_ext:"asdf"
-      f
-  in
-  let () =
-    let process_structure info =
-      let parsetree = Compile_common.parse_impl info in
-      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
-      (*untyped_on_structure info parsetree; *)
-      try
-        (* let typedtree, _ = Compile_common.typecheck_impl info parsetree in
-        typed_on_structure info typedtree;  *)
-        ()
-      with
-      | Env.Error e ->
-        Caml.Format.eprintf "%a\n%!" Env.report_error e;
-        Caml.exit 1
-    in
-    let process_signature info =
-      let parsetree = Compile_common.parse_intf info in
-      untyped_on_signature info parsetree
-      (* let typedtree =
-        try Compile_common.typecheck_intf info parsetree with
-        | Env.Error err ->
-          Format.eprintf "%a\n%!" Env.report_error err;
-          Format.eprintf "%s\n%!" info.Compile_common.source_file;
-          exit 1
+    let () =
+      let process_structure info =
+        let parsetree = Compile_common.parse_impl info in
+        (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
+        (*untyped_on_structure info parsetree; *)
+        process_metrics
+          ~path_to_save:path_to_save_cfg
+          ~parsetree
+          ~filename
+          ~metric
+          ~info:linfo
       in
-      typed_on_signature info typedtree *)
+      with_info (fun info ->
+        if String.is_suffix info.source_file ~suffix:".ml"
+        then process_structure info
+        else (
+          let () =
+            Caml.Format.eprintf
+              "Don't know to do with file '%s'\n%s %d\n%!"
+              info.source_file
+              Caml.__FILE__
+              Caml.__LINE__
+          in
+          Caml.exit 1))
     in
-    with_info (fun info ->
-      if String.is_suffix info.source_file ~suffix:".ml"
-      then process_structure info
-      else if String.is_suffix info.source_file ~suffix:".mli"
-      then process_signature info
-      else (
-        let () =
-          Caml.Format.eprintf
-            "Don't know to do with file '%s'\n%s %d\n%!"
-            info.source_file
-            Caml.__FILE__
-            Caml.__LINE__
-        in
-        Caml.exit 1))
-  in
-  ()
+    ()
+  with
+  | Sys_error _ -> 
+    printfn "Something went wrong. Make sure that directory path is correct and project was build with dune"
 ;;
 
 let () =
@@ -239,12 +187,12 @@ let () =
           }
       in
       process ~path_to_save_cfg ~metric info filename;
-      add_module_info !info;
-      write_data_to_xml !StatisticsCollector.common_data (open_out "example.xml")
+      add_module_info !info
     | Dir (source, metric, path_to_save_cfg) ->
       ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
     | _ -> ()
   in
-  report_all ();
+  write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");
+  (* report_all (); *)
   ()
 ;;

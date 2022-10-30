@@ -166,7 +166,7 @@ let get_nested_functions expr =
       expr =
         (fun self expr ->
           match expr.pexp_desc with
-          | Pexp_let (_, vb, exp) ->
+          | Pexp_let (_, vb, _) ->
             let new_nested_functions =
               vb
               |> List.filter ~f:(fun x ->
@@ -200,7 +200,7 @@ let rec build_cfg current_value_binding =
   let back_edges = ref [] in
   id_set := IdSet.add first_id !id_set;
   G.add_vertex g start_vertex;
-  (* This huge function iterates on AST nodes recursively and build CFG *)
+  (* This huge function iterates on AST nodes recursively and builds CFG *)
   let rec process_builder current_exp prev_vertex nested_exprs call_list =
     let update_graph ~new_id ~name =
       let new_vertex = G.V.create { id = new_id; data = name } in
@@ -223,6 +223,16 @@ let rec build_cfg current_value_binding =
           vb
           |> List.filter ~f:(fun x -> is_fun x.pvb_expr.pexp_desc)
           |> List.map ~f:(fun x -> get_name x.pvb_pat, x.pvb_expr)
+        in
+        let _ =
+          vb
+          |> List.filter ~f:(fun x -> not @@ is_fun x.pvb_expr.pexp_desc)
+          |> List.hd
+          |> (function 
+          | Some h ->
+            let e = h.pvb_expr in
+            process_builder e new_vertex (nested_exprs @ nested_functions) call_list
+          | _ -> ())
         in
         let end_point = new_vertex |> end_branching g in
         let () =
@@ -291,6 +301,6 @@ let rec build_cfg current_value_binding =
   process_builder expr_func start_vertex [] [ fun_name ];
   let g_without_seq = remove_seq_from_graph g start_vertex in
   !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g_without_seq v1 v2);
-  (* show_graph g_without_seq; *)
+(* show_graph g_without_seq; *)
   g_without_seq
 ;;

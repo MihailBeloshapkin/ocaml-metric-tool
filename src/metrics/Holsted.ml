@@ -33,11 +33,14 @@ let analyze_const = function
 
 let add_ops = function
   | Pexp_ifthenelse (_, _, _) -> { operators = [ "if-then" ]; operands = [] }
-  | Pexp_match (_, _) -> { operators = [ "match" ]; operands = [] }
+  | Pexp_match (_, _) -> { operators = [ "match"; "with" ]; operands = [] }
   | Pexp_function _ -> { operators = [ "function" ]; operands = [] }
   | Pexp_for (_, _, _, _, _) -> { operators = [ "for" ]; operands = [] }
-  | Pexp_while (_, _) -> { operators = [ "while" ]; operands = [] }
-  | Pexp_let (_, _, _) -> { operators = [ "let" ]; operands = [] }
+  | Pexp_while (_, _) -> { operators = [ "while"; "do"; "done" ]; operands = [] }
+  | Pexp_let (Asttypes.Recursive, _, _) ->
+    { operators = [ "let"; "rec"; "="; "in" ]; operands = [] }
+  | Pexp_let (Asttypes.Nonrecursive, _, _) ->
+    { operators = [ "let"; "="; "in" ]; operands = [] }
   | Pexp_constant con -> { operators = []; operands = [ analyze_const con ] }
   | _ -> { operators = []; operands = [] }
 ;;
@@ -51,10 +54,10 @@ let add_helsted_info info op_type h_data =
 
 let analyze_lident (txt : Longident.t) op_type =
   (*TODO: Solve problem with long identifiers*)
-  let rec loop_ident tx acc =
+  let rec loop_ident _ acc =
     match txt with
     | Lident info -> add_helsted_info info op_type acc
-    | Ldot (t, info) -> add_helsted_info info op_type acc
+    | Ldot (_, info) -> add_helsted_info info op_type acc
     | Lapply (t1, t2) ->
       let fst_data = loop_ident t1 acc in
       let snd_data = loop_ident t2 acc in
@@ -101,7 +104,10 @@ let run parsetree info =
           match str_it.pstr_desc with
           | Pstr_value (_, vb) ->
             let current_fun = (List.hd_exn vb).pvb_expr in
-            let acc : program_content ref = ref { operators = []; operands = [] } in
+            let local_fun_name = get_name (List.hd_exn vb).pvb_pat in
+            let acc : program_content ref =
+              ref { operators = [ "let"; "=" ]; operands = [ local_fun_name ] }
+            in
             let process_function (l_acc : program_content ref) fallback =
               { fallback with
                 expr =
@@ -119,7 +125,6 @@ let run parsetree info =
             in
             let local_it = process_function acc Ast_iterator.default_iterator in
             local_it.expr local_it current_fun;
-            let local_fun_name = get_name (List.hd_exn vb).pvb_pat in
             StatisticsCollector.add_holsted_for_func
               local_fun_name
               !acc.operators

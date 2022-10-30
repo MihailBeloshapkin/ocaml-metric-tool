@@ -164,14 +164,14 @@ let report_holsted holsted_for_functions =
   |> List.rev
   |> List.iter ~f:(fun x ->
        printf "func: %s\n" x.func_name;
-       (*printf "  Operators: ";
+       printf "  Operators: ";
        List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.operators;
        print_string "\n  Operands: ";
        List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.operands;
        print_string "\n  Unique Operators: ";
        List.iter ~f:(fun l_operator -> printf "%s " l_operator) x.unique_operators;
        print_string "\n  Unique Operands: ";
-       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;*)
+       List.iter ~f:(fun l_operand -> printf "%s " l_operand) x.unique_operands;
        printf "\n  Volume: %f Theoretical volume: %f \n\n" x.volume x.theoretical_volume)
 ;;
 
