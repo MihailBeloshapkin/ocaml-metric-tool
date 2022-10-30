@@ -115,56 +115,51 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
     in
     ()
   | "cg" -> CognitiveComplexity.run parsetree info
-  | "all" ->
+  | _ ->
     LOC.run filename info;
     Holsted.run parsetree info;
     CCComplexity.run parsetree info;
     CognitiveComplexity.run parsetree info
-  | _ -> ()
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
-  try
-    Clflags.error_style := Some Misc.Error_style.Contextual;
-    Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
-    let with_info f =
-      Compile_common.with_info
-        ~native:false
-        ~source_file:filename
-        ~tool_name:"asdf"
-        ~output_prefix:"asdf"
-        ~dump_ext:"asdf"
-        f
+  Clflags.error_style := Some Misc.Error_style.Contextual;
+  Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
+  let with_info f =
+    Compile_common.with_info
+      ~native:false
+      ~source_file:filename
+      ~tool_name:"asdf"
+      ~output_prefix:"asdf"
+      ~dump_ext:"asdf"
+      f
+  in
+  let () =
+    let process_structure info =
+      let parsetree = Compile_common.parse_impl info in
+      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
+      (*untyped_on_structure info parsetree; *)
+      process_metrics
+        ~path_to_save:path_to_save_cfg
+        ~parsetree
+        ~filename
+        ~metric
+        ~info:linfo
     in
-    let () =
-      let process_structure info =
-        let parsetree = Compile_common.parse_impl info in
-        (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
-        (*untyped_on_structure info parsetree; *)
-        process_metrics
-          ~path_to_save:path_to_save_cfg
-          ~parsetree
-          ~filename
-          ~metric
-          ~info:linfo
-      in
-      with_info (fun info ->
-        if String.is_suffix info.source_file ~suffix:".ml"
-        then process_structure info
-        else (
-          let () =
-            Caml.Format.eprintf
-              "Don't know to do with file '%s'\n%s %d\n%!"
-              info.source_file
-              Caml.__FILE__
-              Caml.__LINE__
-          in
-          Caml.exit 1))
-    in
-    ()
-  with
-  | Sys_error _ -> 
-    printfn "Something went wrong. Make sure that directory path is correct and project was build with dune"
+    with_info (fun info ->
+      if String.is_suffix info.source_file ~suffix:".ml"
+      then process_structure info
+      else (
+        let () =
+          Caml.Format.eprintf
+            "Don't know to do with file '%s'\n%s %d\n%!"
+            info.source_file
+            Caml.__FILE__
+            Caml.__LINE__
+        in
+        Caml.exit 1))
+  in
+  ()
 ;;
 
 let () =
@@ -189,7 +184,14 @@ let () =
       process ~path_to_save_cfg ~metric info filename;
       add_module_info !info
     | Dir (source, metric, path_to_save_cfg) ->
-      ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
+      let _ =
+        try ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric) with
+        | Sys_error _ ->
+          printfn
+            "Something went wrong. Make sure that directory path is correct and project \
+             was build with dune"
+      in
+      ()
     | _ -> ()
   in
   write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");
