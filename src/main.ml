@@ -2,7 +2,6 @@ open Caml
 open Base
 open Zanuda_core
 open Utils
-open Addition
 
 let untyped_linters =
   let open UntypedLints in
@@ -99,8 +98,8 @@ let process_cmti_typedtree filename typedtree =
 let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
-  let open GetStatistics in
   (*
+  let open GetStatistics in
   let it = run Ast_iterator.default_iterator in
   it.structure it parsetree;
   *)
