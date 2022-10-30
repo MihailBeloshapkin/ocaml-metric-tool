@@ -34,8 +34,7 @@
   zanuda_core
   TypedLints
   UntypedLints
-  Metrics
-  Addition)
+  Metrics)
  (preprocess
   (pps ppx_inline_test))
  (package mylinter))
