@@ -63,7 +63,7 @@ let analyze_dir ~untyped:analyze_untyped ~cmt:analyze_cmt ~cmti:analyze_cmti pat
     Option.iter m.impl ~f:analyze_untyped;
     Option.iter m.intf ~f:analyze_untyped;
     (* Now analyze Typedtree extracted from cmt[i] *)
-  (*  let on_cmti source_file (_cmi_info, cmt_info) =
+ (*   let on_cmti source_file (_cmi_info, cmt_info) =
       Option.iter cmt_info ~f:(fun cmt ->
           match cmt.Cmt_format.cmt_annots with
           | Cmt_format.Implementation stru -> analyze_cmt source_file stru
@@ -107,7 +107,7 @@ let analyze_dir ~untyped:analyze_untyped ~cmt:analyze_cmt ~cmti:analyze_cmti pat
               f cmt
           in
           wrap (on_cmti source_filename)) *)
-  in 
+  in
   let loop_database () =
     List.iter db ~f:(function
         | Executables { modules; requires } ->

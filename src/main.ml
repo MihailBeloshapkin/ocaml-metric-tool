@@ -2,11 +2,12 @@ open Caml
 open Base
 open Zanuda_core
 open Utils
+open Addition
 
 let untyped_linters =
   let open UntypedLints in
-  [ (*(module GuardInsteadOfIf : LINT.UNTYPED)
-  ; (module Dollar : LINT.UNTYPED)
+  let open Metrics in
+  [ (module GuardInsteadOfIf : LINT.UNTYPED)
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
@@ -29,8 +30,7 @@ let typed_linters =
   ; (module IfBool : LINT.TYPED)
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
-  ; (module MonadLaws : LINT.TYPED) *)
-    (* * *********************** *)
+  ; (module MonadLaws : LINT.TYPED) (* * *********************** *)
   ]
 ;;
 
@@ -97,14 +97,41 @@ let process_cmti_typedtree filename typedtree =
   with_info filename (fun info -> typed_on_signature info typedtree)
 ;;
 
-let process_untyped filename =
+let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
+  let open Metrics in
+  let open Parsetree in
+  let open GetStatistics in
+  
+  (*let it = run Ast_iterator.default_iterator in
+  it.structure it parsetree;*)
+  
+  match metric with
+  | "loc" -> LOC.run filename info
+  | "halstead" -> Holsted.run parsetree info
+  | "cc" ->
+    let () =
+      match path_to_save with
+      | Some p -> CCComplexity.run ~path_to_save:p parsetree info
+      | None -> CCComplexity.run parsetree info
+    in
+    ()
+  | "cg" -> CognitiveComplexity.run parsetree info
+  | _ ->
+    LOC.run filename info;
+    Holsted.run parsetree info;
+    CCComplexity.run parsetree info;
+    CognitiveComplexity.run parsetree info
+    
+;;
+
+let process ~path_to_save_cfg ~metric linfo filename =
   Clflags.error_style := Some Misc.Error_style.Contextual;
   Clflags.include_dirs := Config.includes () @ Clflags.include_dirs.contents;
   let with_info f =
     Compile_common.with_info
       ~native:false
       ~source_file:filename
-      ~tool_name:"asdf" (* TODO: pass right tool name *)
+      ~tool_name:"asdf"
       ~output_prefix:"asdf"
       ~dump_ext:"asdf"
       f
@@ -112,76 +139,67 @@ let process_untyped filename =
   let () =
     let process_structure info =
       let parsetree = Compile_common.parse_impl info in
-      untyped_on_structure info parsetree;
-      try
-        (* let typedtree, _ = Compile_common.typecheck_impl info parsetree in
-        typed_on_structure info typedtree;  *)
-        ()
-      with
-      | Env.Error e ->
-        Caml.Format.eprintf "%a\n%!" Env.report_error e;
-        Caml.exit 1
-    in
-    let process_signature info =
-      let parsetree = Compile_common.parse_intf info in
-      untyped_on_signature info parsetree
-      (* let typedtree =
-        try Compile_common.typecheck_intf info parsetree with
-        | Env.Error err ->
-          Format.eprintf "%a\n%!" Env.report_error err;
-          Format.eprintf "%s\n%!" info.Compile_common.source_file;
-          exit 1
-      in
-      typed_on_signature info typedtree *)
+      (*let typedtree, _ = Compile_common.typecheck_impl info parsetree in*)
+      (*untyped_on_structure info parsetree; *)
+      process_metrics
+        ~path_to_save:path_to_save_cfg
+        ~parsetree
+        ~filename
+        ~metric
+        ~info:linfo
     in
     with_info (fun info ->
-        if String.is_suffix info.source_file ~suffix:".ml"
-        then process_structure info
-        else if String.is_suffix info.source_file ~suffix:".mli"
-        then process_signature info
-        else (
-          let () =
-            Caml.Format.eprintf
-              "Don't know to do with file '%s'\n%s %d\n%!"
-              info.source_file
-              Caml.__FILE__
-              Caml.__LINE__
-          in
-          Caml.exit 1))
+      let open ProcessXml in
+      if String.is_suffix info.source_file ~suffix:".ml"
+      then process_structure info
+      else (
+        write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");      
+        let () =
+          Caml.Format.eprintf
+            "Don't know to do with file '%s'\n%s %d\n%!"
+            info.source_file
+            Caml.__FILE__
+            Caml.__LINE__
+        in
+        ()))
   in
   ()
 ;;
 
 let () =
-  Config.parse_args ();
+  let open Config in
+  let open StatisticsCollector in
+  let open StatisticsCollector.ModuleInfo in
+  let open ProcessXml in
+  parse_args ();
   let () =
-    match Config.mode () with
+    match mode () with
     | Config.Unspecified -> ()
-    | Dump filename ->
+    | File (filename, metric, path_to_save_cfg) ->
       let info =
-        List.concat
-          [ List.map untyped_linters ~f:(fun (module L : LINT.UNTYPED) ->
-                L.describe_itself ())
-          ; List.map typed_linters ~f:(fun (module L : LINT.TYPED) ->
-                L.describe_itself ())
-          ]
+        ref
+          { name = Filename.chop_suffix filename ".ml"
+          ; cycl_compl_data = None
+          ; cogn_compl_data = None
+          ; holsted_for_funcs = None
+          ; loc_metric = None
+          }
       in
-      let ch = Caml.open_out filename in
-      Exn.protect
-        ~f:(fun () -> Yojson.Safe.pretty_to_channel ~std:true ch (`List info))
-        ~finally:(fun () -> Caml.close_out ch);
-      Caml.exit 0
-    | File file ->
-      process_untyped file;
-      CollectedLints.report ()
-    | Dir path -> 
-      LoadDune.analyze_dir
-        ~untyped:process_untyped
-        ~cmt:process_cmt_typedtree
-        ~cmti:process_cmti_typedtree
-        path; 
-      (*CollectedLints.report (); *)
-      StatisticsCollector.report ();
+      process ~path_to_save_cfg ~metric info filename;
+      add_module_info !info
+    | Dir (source, metric, path_to_save_cfg) ->
+      let _ =
+        ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
+        (*
+        | Sys_error _ ->
+          printfn
+            "Something went wrong. Make sure that directory path is correct and project \
+             was build with dune"*)
+      in
+      ()
+    | _ -> ()
   in
+  write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");
+  (*report_all ();*)
   ()
 ;;

@@ -1,0 +1,6 @@
+(library
+ (name Addition)
+ (libraries zanuda_core)
+ (modules
+  GetStatistics
+  Tester))
