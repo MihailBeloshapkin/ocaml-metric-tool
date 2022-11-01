@@ -35,6 +35,8 @@ end
 type t =
   | Executables of executables
   | Library of Library.t
+  | Root of string
+  | Build_context of string
 [@@deriving sexp]
 
 let fine_module { impl } =
@@ -47,6 +49,7 @@ let analyze_directory path analyzer =
   Unix.chdir path;
   let s =
     let ch = Unix.open_process_in "dune describe" in
+    (*let ch = open_in "dd.txt" in*)
     let s = Sexplib.Sexp.input_sexp ch in
     Caml.close_in ch;
     s
@@ -66,7 +69,9 @@ let analyze_directory path analyzer =
     let open StatisticsCollector in
     let open StatisticsCollector.ModuleInfo in
     List.iter db ~f:(function
-      | Executables { modules; requires } | Library { Library.modules; requires } ->
+      | Build_context _ | Root _ -> ()
+      | Executables { modules; requires }
+      | Library { Library.modules; requires } ->
       let extra_paths =
         requires
         |> List.filter_map ~f:(fun uid -> get_library uid)
@@ -82,7 +87,13 @@ let analyze_directory path analyzer =
             ; loc_metric = None
             }
         in
-        if fine_module m then on_module extra_paths m info))
+        try
+          if fine_module m then 
+      (*    printfn "Processing module: %s\n" m.name; *)
+            on_module extra_paths m info
+          with | _ -> ()))
+        
+        
   in
   loop_database ()
 ;;

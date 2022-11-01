@@ -14,6 +14,7 @@ type info =
 
 exception CfgBuildFailed
 exception Found
+exception TimeOut
 
 module IdSet = Caml.Set.Make (struct
   type t = int
@@ -190,6 +191,7 @@ let is_fun = function
 
 (** Build Control Flow Graph from OCaml Parsetree expression*)
 let rec build_cfg current_value_binding =
+  let start = Unix.gettimeofday () in
   let expr_func = current_value_binding.pvb_expr in
   let fun_name = current_value_binding.pvb_pat |> get_name in
   let id_set = ref IdSet.empty in
@@ -200,8 +202,15 @@ let rec build_cfg current_value_binding =
   let back_edges = ref [] in
   id_set := IdSet.add first_id !id_set;
   G.add_vertex g start_vertex;
+  let check_t () =
+    let open Caml in
+    let t = Unix.gettimeofday () in
+    let delta = t -. start in
+    if (delta > 10.) then raise TimeOut else ()
+  in
   (* This huge function iterates on AST nodes recursively and builds CFG *)
   let rec process_builder current_exp prev_vertex nested_exprs call_list =
+    (*check_t ();*)
     let update_graph ~new_id ~name =
       let new_vertex = G.V.create { id = new_id; data = name } in
       G.add_vertex g new_vertex;
@@ -228,11 +237,11 @@ let rec build_cfg current_value_binding =
           vb
           |> List.filter ~f:(fun x -> not @@ is_fun x.pvb_expr.pexp_desc)
           |> List.hd
-          |> (function 
+          |> function
           | Some h ->
             let e = h.pvb_expr in
             process_builder e new_vertex (nested_exprs @ nested_functions) call_list
-          | _ -> ())
+          | _ -> ()
         in
         let end_point = new_vertex |> end_branching g in
         let () =
@@ -299,8 +308,9 @@ let rec build_cfg current_value_binding =
     | _ -> create_new_node ()
   in
   process_builder expr_func start_vertex [] [ fun_name ];
-  let g_without_seq = remove_seq_from_graph g start_vertex in
-  !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g_without_seq v1 v2);
-(* show_graph g_without_seq; *)
-  g_without_seq
+  (*let g_without_seq = remove_seq_from_graph g start_vertex in
+  !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g_without_seq v1 v2);*)
+  (* show_graph g_without_seq; *)
+  !back_edges |> List.iter ~f:(fun (v1, v2) -> G.add_edge g v1 v2);
+  g
 ;;

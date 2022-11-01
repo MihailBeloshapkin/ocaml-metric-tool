@@ -2,6 +2,7 @@ open Caml
 open Base
 open Zanuda_core
 open Utils
+open Addition
 
 let untyped_linters =
   let open UntypedLints in
@@ -98,11 +99,11 @@ let process_cmti_typedtree filename typedtree =
 let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
   let open Metrics in
   let open Parsetree in
-  (*
   let open GetStatistics in
-  let it = run Ast_iterator.default_iterator in
-  it.structure it parsetree;
-  *)
+  
+  (*let it = run Ast_iterator.default_iterator in
+  it.structure it parsetree;*)
+  
   match metric with
   | "loc" -> LOC.run filename info
   | "halstead" -> Holsted.run parsetree info
@@ -119,6 +120,7 @@ let process_metrics ~path_to_save ~parsetree ~filename ~metric ~info =
     Holsted.run parsetree info;
     CCComplexity.run parsetree info;
     CognitiveComplexity.run parsetree info
+    
 ;;
 
 let process ~path_to_save_cfg ~metric linfo filename =
@@ -146,9 +148,11 @@ let process ~path_to_save_cfg ~metric linfo filename =
         ~info:linfo
     in
     with_info (fun info ->
+      let open ProcessXml in
       if String.is_suffix info.source_file ~suffix:".ml"
       then process_structure info
       else (
+        write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");      
         let () =
           Caml.Format.eprintf
             "Don't know to do with file '%s'\n%s %d\n%!"
@@ -156,7 +160,7 @@ let process ~path_to_save_cfg ~metric linfo filename =
             Caml.__FILE__
             Caml.__LINE__
         in
-        Caml.exit 1))
+        ()))
   in
   ()
 ;;
@@ -184,16 +188,17 @@ let () =
       add_module_info !info
     | Dir (source, metric, path_to_save_cfg) ->
       let _ =
-        try ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric) with
+        ProcessDune.analyze_directory source (process ~path_to_save_cfg ~metric)
+        (*
         | Sys_error _ ->
           printfn
             "Something went wrong. Make sure that directory path is correct and project \
-             was build with dune"
+             was build with dune"*)
       in
       ()
     | _ -> ()
   in
   write_data_to_xml !StatisticsCollector.common_data (open_out "output.xml");
-  (* report_all (); *)
+  (*report_all ();*)
   ()
 ;;
