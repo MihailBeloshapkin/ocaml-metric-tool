@@ -11,8 +11,7 @@ let untyped_linters =
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
-  ; (module VarShouldNotBeUsed : LINT.UNTYPED)  
-  ;*) (module GetStatistics: LINT.UNTYPED)
+  ; (module VarShouldNotBeUsed : LINT.UNTYPED)
   ]
 ;;
 
@@ -31,7 +30,7 @@ let typed_linters =
   ; (module Equality : LINT.TYPED)
   ; (module StringConcat : LINT.TYPED)
   ; (module MonadLaws : LINT.TYPED) (* * *********************** *)
-  ]
+  *)]
 ;;
 
 (* TODO: Functions below are a little bit copy-pasty. Rework them *)
