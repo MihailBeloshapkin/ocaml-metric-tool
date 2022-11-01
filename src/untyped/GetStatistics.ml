@@ -34,8 +34,7 @@ let run _ fallback =
     expr =
       (fun self currentExpr ->
         let loc = currentExpr.pexp_loc in
-        let filename = loc.Location.loc_start.Lexing.pos_fname in
-        
+        let filename = loc.Location.loc_start.Lexing.pos_fname in        
         Caml.Format.printf "\n======================\n";
         Pprintast.expression Format.std_formatter currentExpr;
 

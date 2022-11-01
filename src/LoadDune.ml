@@ -125,5 +125,5 @@ let analyze_dir ~untyped:analyze_untyped ~cmt:analyze_cmt ~cmti:analyze_cmti pat
           in
           List.iter modules ~f:(fun m -> if fine_module m then on_module extra_paths m))
   in
-  loop_database ()
+  loop_database () 
 ;;

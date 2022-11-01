@@ -11,14 +11,15 @@ let untyped_linters =
   ; (module Casing : LINT.UNTYPED)
   ; (module ParsetreeHasDocs : LINT.UNTYPED)
   ; (module ToplevelEval : LINT.UNTYPED)
-  ; (module VarShouldNotBeUsed : LINT.UNTYPED)
+  ; (module VarShouldNotBeUsed : LINT.UNTYPED)  
+  ;*) (module GetStatistics: LINT.UNTYPED)
   ]
 ;;
 
 let typed_linters =
   let open TypedLints in
   [ (* * *********************** *)
-    (module Failwith : LINT.TYPED)
+    (*(module Failwith : LINT.TYPED)
   ; (module Hashtables : LINT.TYPED)
   ; (module ListLength : LINT.TYPED)
   ; (module ProposeFunction : LINT.TYPED)

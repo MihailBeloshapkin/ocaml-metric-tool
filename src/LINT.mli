@@ -51,6 +51,13 @@ module type TYPED = sig
   val describe_itself : unit -> Yojson.Safe.t
 end
 
+module type STATISTICS = sig
+  type input = Ast_iterator.iterator
+
+  include GENERAL with type input := input
+ 
+end
+
 module type REPORTER = sig
   val txt : Format.formatter -> unit -> unit
   val rdjsonl : Format.formatter -> unit -> unit

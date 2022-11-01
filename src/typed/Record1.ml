@@ -94,6 +94,7 @@ module State = struct
       let loc = Location.none in
       let mk_loc txt = { Location.txt; loc } in
       let make_lident s = mk_loc (Longident.Lident s) in
+      
       let fields =
         List.concat
           [ List.filter_map st_over_self ~f:(function fname, ident_path ->

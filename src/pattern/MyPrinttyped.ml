@@ -1,4 +1,5 @@
 include Printtyped
+include Untypeast
 
 [%%if ocaml_version < (4, 11, 0)]
 

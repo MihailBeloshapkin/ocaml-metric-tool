@@ -20,6 +20,8 @@ API: https://kakadu.github.io/mylinter/api/ is currently empty
 
 ##### Developing
 
+    git checkout statistics-1
+
 Running a single test:
 
     dune build && dune build @ifbool --force
